@@ -1,0 +1,35 @@
+{
+  "Euna Payments": {
+    "DevOps": {
+      "Argo Dev": "https://argodev.cityba.se/applications",
+      "Argo UAT": "https://argouat.cityba.se/applications",
+      "Argo Prod": "https://argoprod.cityba.se/applications",
+      "Coralogix": "https://payments.app.cx498.coralogix.com/#/dashboard",
+      "Airbrake": "https://citybase.airbrake.io/projects",
+      "Grafana Prod": "https://grafana.prod.cityba.se/login"
+    },
+    "Tools": {
+      "JIRA": "https://eunasolutions.atlassian.net/",
+      "JumpCloud Console": "https://console.jumpcloud.com/login#/",
+      "Sisense (Periscope)": "https://app.periscopedata.com/",
+      "Mailcatcher UAT": "https://mailcatcher-default.uat.cityba.se/",
+      "Demo Dashboard": "https://demo-dashboard-demos.uat.cityba.se/demos",
+      "IT Service Desk": "https://servicedesk.jira.eunasolutions.com/servicedesk/customer/portal/12"
+    },
+    "Okta": {
+      "Okta Dev": "https://dev-747917-admin.okta.com/admin/dashboard",
+      "Okta UAT": "https://citybase-admin.oktapreview.com/admin/dashboard",
+      "Okta Prod": "https://citybase-admin.okta.com/admin/dashboard"
+    },
+    "Docs": {
+      "Confluence - Dev Onboarding": "https://eunasolutions.atlassian.net/wiki/spaces/CBDEV/pages/1101627936/New+Engineer+Onboarding",
+      "Confluence - Team Resources": "https://eunasolutions.atlassian.net/wiki/spaces/PROD/pages/1099846596/Team+Resources",
+      "Confluence - Deployment Process": "https://eunasolutions.atlassian.net/wiki/spaces/PROD/pages/1101633872/Deployment+Process",
+      "Confluence - PR Process": "https://eunasolutions.atlassian.net/wiki/spaces/CBDEV/pages/1101628584",
+      "Confluence - K8s Cheatsheet": "https://eunasolutions.atlassian.net/wiki/spaces/INFRASRV/pages/1096089963/Kubernetes+CB+Cheatsheet",
+      "GitHub - c4-diagrams": "https://github.com/CityBaseInc/c4-diagrams",
+      "GitHub - app-state": "https://github.com/CityBaseInc/app-state",
+      "Repos by Team": "https://eunasolutions.atlassian.net/wiki/spaces/PROD/pages/1099825270"
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "Web Team": {
+    "Revenue Management (RevM)": {
+      "RevM Prod": "https://revenue.thecitybase.com/",
+      "RevM Seeds (UAT)": "https://revenue-management-dashboard-seeds.uat.cityba.se/",
+      "RevM Serve (UAT)": "https://revenue-management-dashboard-serve.uat.cityba.se/",
+      "RevM Dev (your ns)": "https://revenue-management-dashboard-{namespace}.dev.cityba.se/login"
+    },
+    "Navigate Frontend (SF)": {
+      "NFE SF Serve (UAT)": "https://san-fran-serve.uat.cityba.se/login",
+      "NFE SF Seeds (UAT)": "https://san-fran-seeds.uat.cityba.se/login",
+      "NFE SF Dev (your ns)": "https://san-fran-{namespace}.dev.cityba.se/login"
+    },
+    "Navigate Frontend (Cityville)": {
+      "NFE Cityville Serve": "https://cityville-serve.uat.cityba.se/login",
+      "NFE Cityville Seeds": "https://cityville-seeds.uat.cityba.se/login",
+      "NFE Cityville Dev (your ns)": "https://cityville-{namespace}.dev.cityba.se/login",
+      "NFE Cityville Demo": "https://cityville-demos.uat.cityba.se/"
+    },
+    "Internal Services (VPN Required)": {
+      "Schedule Service Seeds": "https://schedule-service-seeds.internal.uat.cityba.se/admin/occurrences",
+      "Schedule Service Serve": "https://schedule-service-serve.internal.uat.cityba.se/admin/occurrences",
+      "Audit Service Seeds": "https://audit-service-seeds.internal.uat.cityba.se/",
+      "Audit Service Serve": "https://audit-service-serve.internal.uat.cityba.se/",
+      "SFTester": "https://sftester-product.internal.dev.cityba.se/"
+    },
+    "Team Docs": {
+      "Web Team Processes": "https://eunasolutions.atlassian.net/wiki/spaces/PROD/pages/1099827856/Team+Processes",
+      "Web Dev Docs": "https://eunasolutions.atlassian.net/wiki/spaces/PROD/pages/1099837515/Development+-+Web+team",
+      "Browser Tools": "https://eunasolutions.atlassian.net/wiki/spaces/PROD/pages/1099837508/Useful+Browser+tools"
+    }
+  }
+}

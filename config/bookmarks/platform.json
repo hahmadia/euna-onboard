@@ -1,0 +1,14 @@
+{
+  "Platform Team": {
+    "Ghenghis": {
+      "CBOPS Dev (your ns)": "https://cbops-{namespace}.dev.cityba.se/",
+      "CBOPS Seeds (UAT)": "https://cbops-seeds.uat.cityba.se/",
+      "CBOPS Serve (UAT)": "https://cbops-serve.uat.cityba.se/",
+      "CBOPS Prod": "https://cbops.thecitybase.com/"
+    },
+    "Internal Services (VPN Required)": {
+      "GQL Interface Dev": "https://gql-interface-{namespace}.internal.dev.cityba.se/",
+      "File Lookup Dev": "https://file-lookup-service-{namespace}.internal.dev.cityba.se/"
+    }
+  }
+}

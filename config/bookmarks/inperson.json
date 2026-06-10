@@ -1,0 +1,17 @@
+{
+  "InPerson Team": {
+    "Cashiering (POS)": {
+      "POS Dev (your ns)": "https://pos-frontend-{namespace}.dev.cityba.se/",
+      "POS Seeds (UAT)": "https://pos-frontend-seeds.uat.cityba.se/",
+      "POS Serve (UAT)": "https://pos-frontend-serve.uat.cityba.se/"
+    },
+    "Kiosk": {
+      "Kiosk Dev (your ns)": "https://kiosk-interface-{namespace}.dev.cityba.se/",
+      "Kiosk Seeds (UAT)": "https://kiosk-interface-seeds.uat.cityba.se/"
+    },
+    "Team Docs": {
+      "Browser Tools": "https://eunasolutions.atlassian.net/wiki/spaces/PROD/pages/1099837508/Useful+Browser+tools",
+      "Okta SSO Setup": "https://eunasolutions.atlassian.net/wiki/spaces/PROD/pages/1099842868/How+to+Set+Up+a+Non-Prod+Environment+for+Okta+SSO"
+    }
+  }
+}
