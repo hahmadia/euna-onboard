@@ -52,62 +52,59 @@ access_guidance() {
   local id="$1"
   case "$id" in
     github_cb|github_pay)
-      dim "Self-service via SSO — no IT ticket needed:"
-      dim "  1. Open the M365 apps portal and sign in with your @${EUNA_EMAIL_DOMAIN} account"
-      dim "  2. Go to 'Other apps' → '[GH-APP] CityBase Enterprise – CityBaseInc'"
+      note "Self-service via SSO — no IT ticket needed:"
+      note "  1. Open the M365 apps portal and sign in with your @${EUNA_EMAIL_DOMAIN} account"
+      note "  2. Go to 'Other apps' → '[GH-APP] CityBase Enterprise – CityBaseInc'"
       open_once "$M365_APPS_URL"
       ;;
     aws_iam)
-      dim "Self-service via SSO — no IT ticket needed:"
-      dim "  1. Open the M365 apps portal → 'AWS IAM Identity Center'"
-      dim "  2. Confirm you can see: Payments Production (${AWS_ACCOUNT_ID})"
-      dim "     account ${AWS_ACCOUNT_EMAIL}, role '${AWS_SSO_ROLE}'"
+      note "Self-service via SSO — no IT ticket needed:"
+      note "  1. Open the M365 apps portal → 'AWS IAM Identity Center'"
+      note "  2. Confirm you can see: Payments Production (${AWS_ACCOUNT_ID})"
+      note "     account ${AWS_ACCOUNT_EMAIL}, role '${AWS_SSO_ROLE}'"
       open_once "$M365_APPS_URL"
       ;;
     coralogix)
-      dim "Self-service via SSO — no IT ticket needed:"
-      dim "  1. Open the M365 apps portal → 'Coralogix-Payments'"
-      dim "  2. Enter your @${EUNA_EMAIL_DOMAIN} email, click Continue, then choose 'Login with SSO'"
+      note "Self-service via SSO — no IT ticket needed:"
+      note "  1. Open the M365 apps portal → 'Coralogix-Payments'"
+      note "  2. Enter your @${EUNA_EMAIL_DOMAIN} email, click Continue, then choose 'Login with SSO'"
       open_once "$M365_APPS_URL"
       ;;
     airbrake)
-      dim "No IT ticket needed — sign in with GitHub:"
-      dim "  1. Go to ${AIRBRAKE_URL} and sign in with your GitHub account"
-      dim "  2. Confirm you can see the projects and their errors"
+      note "No IT ticket needed — sign in with GitHub:"
+      note "  1. Go to ${AIRBRAKE_URL} and sign in with your GitHub account"
+      note "  2. Confirm you can see the projects and their errors"
       open_once "$AIRBRAKE_URL"
       ;;
     gemfury)
-      dim "No IT ticket needed — confirm you can reach the dashboard:"
-      dim "  Log in at ${GEMFURY_DASHBOARD_URL}"
+      note "1. Log in at ${GEMFURY_DASHBOARD_URL}"
+      note "2. If you can't log in or don't have an account, you'll need an IT ticket (you'll be prompted below)."
       open_once "$GEMFURY_DASHBOARD_URL"
       ;;
     npm_org)
-      dim "No IT ticket needed:"
-      dim "  1. Create an account at npmjs.com if you don't have one"
-      dim "  2. Confirm you're a member of the @thecb org: ${NPM_MEMBERS_URL}"
+      note "1. Create an account at npmjs.com if you don't have one"
+      note "2. Confirm you're a member of the @thecb org: ${NPM_MEMBERS_URL}"
       open_once "$NPM_MEMBERS_URL"
       ;;
     onepassword)
-      dim "No IT ticket needed:"
-      dim "  In your 1Password app, confirm the 'Citybase - Technology' vault appears under Euna Solutions"
+      note "In your 1Password app, confirm the 'Citybase - Technology' vault appears under Euna Solutions"
       ;;
     jira)
-      dim "Sign in with your @${EUNA_EMAIL_DOMAIN} account:"
-      dim "  ${JIRA_URL}"
+      note "Sign in with your @${EUNA_EMAIL_DOMAIN} account:"
+      note "  ${JIRA_URL}"
       open_once "$JIRA_URL"
       ;;
     sisense)
-      dim "No IT ticket needed:"
-      dim "  1. Log in at ${PERISCOPE_URL}"
-      dim "  2. Confirm you can see the dashboards"
+      note "1. Log in at ${PERISCOPE_URL} and confirm you can see the dashboards"
+      note "2. If you can't log in or don't have an account, you'll need an IT ticket (you'll be prompted below)."
       open_once "$PERISCOPE_URL"
       ;;
     vpn)
-      dim "VPN access can't be checked automatically and is requested through IT."
-      dim "If you don't already have it, open a ticket below and re-run Phase 1 once IT grants it."
+      note "VPN access can't be checked automatically and is requested through IT."
+      note "If you don't already have it, open a ticket below and re-run Phase 1 once IT grants it."
       ;;
     *)
-      dim "Confirm you can access this platform."
+      note "Confirm you can access this platform."
       ;;
   esac
 }

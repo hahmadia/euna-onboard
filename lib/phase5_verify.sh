@@ -114,18 +114,12 @@ run_phase5() {
   dim "Run 'asdf install' + deps in each repo yourself (see its README)."
   echo ""
 
-  # ── Bookmarks & AI ───────────────────────────────────────────────
-  echo "${BOLD}Bookmarks & AI${NC}"
+  # ── Bookmarks ─────────────────────────────────────────────────────
+  echo "${BOLD}Bookmarks${NC}"
   if is_step_done "bookmarks_generated"; then
     success "Chrome bookmarks generated"
   else
     fail "Chrome bookmarks not generated"
-  fi
-
-  if [[ -f "${CODE_DIR}/CLAUDE.md" ]]; then
-    success "CLAUDE.md installed"
-  else
-    warn "CLAUDE.md not installed"
   fi
   echo ""
 
@@ -157,8 +151,6 @@ run_phase5() {
   echo "  5. Complete your compliance training: ${COMPLIANCE_TRAINING_URL}"
   echo "  6. Write your onboarding feedback: ${CONFLUENCE_ONBOARDING}"
   echo ""
-  dim "Tip: Use Claude Code or Warp AI to ask questions about the codebase!"
-  dim "Example: 'What repos do I need running to test Revenue Management Dashboard locally?'"
 }
 
 # ── Helper functions ────────────────────────────────────────────────

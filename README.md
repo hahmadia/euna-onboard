@@ -37,7 +37,7 @@ The script finds its own location, so it works from anywhere (`~/Downloads`, `~/
 
 ## What It Does
 
-The script runs 5 phases in order. Each phase is idempotent — safe to re-run if something fails. Progress is saved to `~/.euna-onboard-state` so you can resume where you left off.
+The script runs 5 phases in order. Each phase is idempotent — safe to re-run if something fails. Progress is saved to `.euna-onboard-state` in the repo (gitignored) so you can resume where you left off.
 
 ### Phase 1: Access Audit
 - Guides you through self-service access (SSO via the M365 apps portal, or direct logins) for GitHub, AWS, Coralogix, GemFury, NPM, 1Password, Airbrake, Sisense, JIRA, etc.
@@ -56,11 +56,9 @@ The script runs 5 phases in order. Each phase is idempotent — safe to re-run i
 - That's it — it does **not** run `asdf install` or install dependencies. The tools are installed in Phase 2, but setting up each repo (runtime versions + `npm install` / `mix deps.get` / `bundle install`) is left to you, per that repo's README
 - Reports which repos cloned and which need attention (e.g. GitHub access)
 
-### Phase 4: Bookmarks & AI
+### Phase 4: Bookmarks
 - Generates a Chrome-importable bookmarks HTML file with all environment URLs
 - Bookmarks are team-aware (Web gets RevM/NFE links, InPerson gets POS/Kiosk, etc.)
-- Installs Warp rules for repo abbreviations and team context
-- Sets up `CLAUDE.md` with architecture context for Claude Code
 
 ### Phase 5: Verification
 - Smoke-tests all tools, configs, access, and repos
@@ -98,19 +96,12 @@ Each team has its own config file in `config/` that defines:
 | InPerson | `config/inperson.conf` | cb_pos, pos-frontend, kiosk_interface, device_drivers, etc. |
 | Platform | `config/platform.conf` | Ghenghis, GQL Interface, FLS, CATO, cb_relay, etc. |
 
-## AI Tools
-
-The script installs:
-- **`CLAUDE.md`** — Architecture context, repo dependency graph, common commands, and troubleshooting FAQ for Claude Code
-- **Warp rules** — Repo abbreviations and team context so Warp AI understands your codebase
-
 ## Contributing
 
 To update the onboarding process:
 1. Edit the relevant config file in `config/`
 2. Update bookmark URLs in `config/bookmarks/`
-3. Update the AI context in `ai/CLAUDE.md`
-4. Test with `--dry-run` before merging
+3. Test with `--dry-run` before merging
 
 ## Acknowledgments
 

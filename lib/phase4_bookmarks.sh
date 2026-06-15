@@ -1,12 +1,10 @@
 #!/bin/bash
-# phase4_bookmarks.sh — Generate Chrome bookmarks HTML + install AI/Warp config
+# phase4_bookmarks.sh — Generate the Chrome bookmarks HTML file
 
 run_phase4() {
-  header "Phase 4: Bookmarks & AI Tools"
+  header "Phase 4: Bookmarks"
 
   generate_bookmarks
-  setup_warp_config
-  setup_claude_config
 
   echo ""
   success "Phase 4 complete"
@@ -72,90 +70,33 @@ add_bookmarks_from_json() {
     return 1
   fi
 
-  # Read top-level object keys as folders
+  # Read top-level object keys as folders.
+  # NOTE: iterate with `while read` (bash) — `${(f)var}` is zsh-only and fails
+  # under bash with "bad substitution".
   local top_keys=$(jq -r 'to_entries[].key' "$json_file" 2>/dev/null)
 
-  for top_key in ${(f)top_keys}; do
+  local top_key sub_key entry
+  while IFS= read -r top_key; do
+    [[ -z "$top_key" ]] && continue
     local sub_keys=$(jq -r ".[\"${top_key}\"] | to_entries[].key" "$json_file" 2>/dev/null)
 
-    for sub_key in ${(f)sub_keys}; do
+    while IFS= read -r sub_key; do
+      [[ -z "$sub_key" ]] && continue
       echo "    <DT><H3>${sub_key}</H3>" >> "$output_file"
       echo "    <DL><p>" >> "$output_file"
 
       local entries=$(jq -r ".[\"${top_key}\"][\"${sub_key}\"] | to_entries[] | \"\(.key)|\(.value)\"" "$json_file" 2>/dev/null)
 
-      for entry in ${(f)entries}; do
+      while IFS= read -r entry; do
+        [[ -z "$entry" ]] && continue
         local name=$(echo "$entry" | cut -d'|' -f1)
         local url=$(echo "$entry" | cut -d'|' -f2)
         # Replace {namespace} placeholder
         url=$(echo "$url" | sed "s/{namespace}/${namespace}/g")
         echo "      <DT><A HREF=\"${url}\">${name}</A>" >> "$output_file"
-      done
+      done <<< "$entries"
 
       echo "    </DL><p>" >> "$output_file"
-    done
-  done
-}
-
-# ── Warp Configuration ──────────────────────────────────────────────
-setup_warp_config() {
-  step "Configuring Warp AI tools..."
-
-  if ! command_exists warp 2>/dev/null && [[ ! -d "/Applications/Warp.app" ]]; then
-    info "Warp not detected — skipping Warp config"
-    dim "Sign up at: ${WARP_SIGNUP_URL}"
-    return
-  fi
-
-  if is_step_done "warp_config"; then
-    dim "Warp already configured"
-    return
-  fi
-
-  # Copy Warp rules if the rules directory exists
-  local warp_rules_dst="${HOME}/.warp/rules"
-  if [[ -d "$warp_rules_dst" ]] || [[ -d "${HOME}/Library/Application Support/dev.warp.Warp-Stable" ]]; then
-    local rules_src="${AI_DIR}/warp-rules"
-    if [[ -d "$rules_src" ]]; then
-      ensure_dir "$warp_rules_dst"
-      for rule_file in "$rules_src"/*.md; do
-        local rule_name=$(basename "$rule_file")
-        if [[ ! -f "${warp_rules_dst}/${rule_name}" ]]; then
-          cp "$rule_file" "${warp_rules_dst}/${rule_name}"
-          success "Installed Warp rule: ${rule_name}"
-        else
-          dim "Warp rule already exists: ${rule_name}"
-        fi
-      done
-    fi
-  else
-    dim "Warp rules directory not found — you may need to configure rules manually"
-  fi
-
-  mark_step_done "warp_config"
-}
-
-# ── Claude Code Configuration ───────────────────────────────────────
-setup_claude_config() {
-  step "Setting up Claude Code context..."
-
-  if is_step_done "claude_config"; then
-    dim "Claude config already set up"
-    return
-  fi
-
-  local claude_src="${AI_DIR}/CLAUDE.md"
-  local claude_dst="${CODE_DIR}/CLAUDE.md"
-
-  if [[ -f "$claude_src" ]]; then
-    if [[ ! -f "$claude_dst" ]]; then
-      cp "$claude_src" "$claude_dst"
-      success "Installed CLAUDE.md to ${claude_dst}"
-      dim "This gives Claude Code context about the Euna Payments architecture"
-    else
-      dim "CLAUDE.md already exists at ${claude_dst}"
-    fi
-  fi
-
-  mark_step_done "claude_config"
+    done <<< "$sub_keys"
+  done <<< "$top_keys"
 }
