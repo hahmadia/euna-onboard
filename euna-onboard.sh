@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/bin/bash
 # euna-onboard.sh — Automated developer onboarding for Euna Payments
 #
 # Usage:
@@ -11,7 +11,7 @@
 set -o pipefail
 
 # ── Resolve script directory ────────────────────────────────────────
-SCRIPT_DIR="${0:A:h}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
 
 # ── Immediate banner (first thing the user sees) ────────────────────

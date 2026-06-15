@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/bin/bash
 # phase3_repos.sh — Clone and set up team-specific repositories
 
 run_phase3() {

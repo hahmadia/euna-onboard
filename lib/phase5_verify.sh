@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/bin/bash
 # phase5_verify.sh — Verify everything is set up, print report card
 
 run_phase5() {
