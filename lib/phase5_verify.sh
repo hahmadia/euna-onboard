@@ -75,31 +75,25 @@ run_phase5() {
       continue
     fi
     if [[ "$state" == "pending" ]]; then
-      warn "${name} — IT ticket pending"
+      warn "${name} — awaiting access (re-run '--phase 1' once granted)"
       pending_count=$((pending_count + 1))
       continue
     fi
 
-    # Live re-check now that Phase 2 has installed the CLIs
+    # Try to auto-confirm now that Phase 2 has installed the CLIs; anything
+    # we can't confirm is an action item, not a hard failure.
     local check_fn=$(echo "$check_cmd" | awk '{print $1}')
     local check_arg=$(echo "$check_cmd" | awk '{print $2}')
     local rc=0
     $check_fn $check_arg 2>/dev/null || rc=$?
-    case $rc in
-      0)
-        success "${name}"
-        mark_step_done "access_${id}" >/dev/null
-        pass=$((pass + 1))
-        ;;
-      2)
-        warn "${name} — needs manual verification"
-        pending_count=$((pending_count + 1))
-        ;;
-      *)
-        fail "${name} — not verified"
-        fail_count=$((fail_count + 1))
-        ;;
-    esac
+    if [[ $rc -eq 0 ]]; then
+      success "${name}"
+      mark_step_done "access_${id}" >/dev/null
+      pass=$((pass + 1))
+    else
+      warn "${name} — not confirmed (self-service; re-run '--phase 1')"
+      pending_count=$((pending_count + 1))
+    fi
   done
   echo ""
 

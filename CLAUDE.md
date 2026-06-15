@@ -25,7 +25,7 @@ Valid teams: `web`, `inperson`, `platform`. There is no single-test command — 
 
 **Orchestrator → phases → shared lib → config.** `euna-onboard.sh` parses args, resolves team, sources the config files and all phase scripts, then calls `run_phase1` … `run_phase5` in order (gated by `--phase`). Each phase is a function defined in its own `lib/phaseN_*.sh` file:
 
-- `phase1_access.sh` — audits access to platforms in the `PLATFORMS` array; each platform names a check function (e.g. `gh_org_check`, `aws_check`). Checks return 0=ok, 1=missing, 2=manual/unknown. Missing items open pre-filled IT ticket forms via `IT_TICKET_BASE`.
+- `phase1_access.sh` — guides self-service access for platforms in the `PLATFORMS` array. Each platform names a check function: `gh_org_check`/`aws_check` auto-confirm if the CLI is authenticated, while `browser_check` always returns non-zero (manual confirmation). When a check can't confirm, it prints self-service steps via `access_guidance` and asks the user; an IT ticket (`IT_TICKET_BASE`) is only a fallback. Re-runs re-check anything left `pending`.
 - `phase2_environment.sh` — Homebrew packages, asdf + plugins, GPG key + git signing, git commit template, `.zshrc` additions.
 - `phase3_repos.sh` — clones each entry in the team's `REPOS` array into `~/code/` and nothing more. It deliberately does **not** run `asdf install` or install dependencies; runtime/dependency setup is left to the developer per each repo's README. (`stack_type` in `REPOS` is now just metadata.)
 - `phase4_bookmarks.sh` — generates Chrome bookmarks HTML, Warp rules, and `CLAUDE.md` from `config/bookmarks/` and `ai/`.
