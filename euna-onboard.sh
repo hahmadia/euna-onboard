@@ -30,7 +30,7 @@ ${BOLD}REQUIRED${NC}
 
 ${BOLD}OPTIONS${NC}
   --name "Name"       Your full name (for git config)
-  --email "email"     Your @thecitybase.com email
+  --email "email"     Your @eunasolutions.com email
   --phase N           Start from phase N (1-5)
   --dry-run           Preview without making changes
   --verify            Run verification only (Phase 5)
@@ -159,8 +159,7 @@ if [[ -z "$DEV_EMAIL" ]]; then
   DEV_EMAIL=$(state_get "dev_email")
 fi
 if [[ -z "$DEV_EMAIL" ]] && ! $VERIFY_ONLY; then
-  default_email=$(echo "$DEV_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/ /./g')
-  DEV_EMAIL=$(prompt_input "What is your @${CITYBASE_EMAIL_DOMAIN} email?" "${default_email}@${CITYBASE_EMAIL_DOMAIN}")
+  DEV_EMAIL=$(prompt_input "What is your @${EUNA_EMAIL_DOMAIN} email?")
   state_set "dev_email" "$DEV_EMAIL"
   echo ""
 fi

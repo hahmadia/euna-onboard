@@ -223,7 +223,7 @@ load_config() {
 CODE_DIR="${HOME}/code"
 GITHUB_ORG="CityBaseInc"
 GITHUB_ORG_PAYMENTS="Payments-CityBase"
-CITYBASE_EMAIL_DOMAIN="thecitybase.com"
+EUNA_EMAIL_DOMAIN="eunasolutions.com"
 IT_TICKET_BASE="https://servicedesk.jira.eunasolutions.com/servicedesk/customer/portal/12/group/17/create/101"
 
 # DRY_RUN mode

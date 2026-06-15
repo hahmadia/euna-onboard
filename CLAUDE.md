@@ -27,7 +27,7 @@ Valid teams: `web`, `inperson`, `platform`. There is no single-test command — 
 
 - `phase1_access.sh` — audits access to platforms in the `PLATFORMS` array; each platform names a check function (e.g. `gh_org_check`, `aws_check`). Checks return 0=ok, 1=missing, 2=manual/unknown. Missing items open pre-filled IT ticket forms via `IT_TICKET_BASE`.
 - `phase2_environment.sh` — Homebrew packages, asdf + plugins, GPG key + git signing, git commit template, `.zshrc` additions.
-- `phase3_repos.sh` — clones each entry in the team's `REPOS` array into `~/code/`, runs `asdf install`, then installs deps by `stack_type` (`elixir`→`mix deps.get`, `node`→`npm install`, `ruby`→`bundle install`, `static`→skip).
+- `phase3_repos.sh` — clones each entry in the team's `REPOS` array into `~/code/` and nothing more. It deliberately does **not** run `asdf install` or install dependencies; runtime/dependency setup is left to the developer per each repo's README. (`stack_type` in `REPOS` is now just metadata.)
 - `phase4_bookmarks.sh` — generates Chrome bookmarks HTML, Warp rules, and `CLAUDE.md` from `config/bookmarks/` and `ai/`.
 - `phase5_verify.sh` — smoke-tests tools/configs/repos and prints a ✅/⏳/❌ report card.
 

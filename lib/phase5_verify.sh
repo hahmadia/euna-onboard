@@ -60,19 +60,39 @@ run_phase5() {
   echo ""
 
   # ── Platform Access ───────────────────────────────────────────────
+  # Tools are installed by now, so re-run any check that isn't already
+  # confirmed or waiting on an IT ticket — this is the accurate audit.
   echo "${BOLD}Platform Access${NC}"
   for platform_entry in "${PLATFORMS[@]}"; do
     local id=$(echo "$platform_entry" | cut -d: -f1)
     local name=$(echo "$platform_entry" | cut -d: -f2)
+    local check_cmd=$(echo "$platform_entry" | cut -d: -f3)
 
     local state=$(state_get "access_${id}")
-    case "$state" in
-      done)
+    if [[ "$state" == "done" ]]; then
+      success "${name}"
+      pass=$((pass + 1))
+      continue
+    fi
+    if [[ "$state" == "pending" ]]; then
+      warn "${name} — IT ticket pending"
+      pending_count=$((pending_count + 1))
+      continue
+    fi
+
+    # Live re-check now that Phase 2 has installed the CLIs
+    local check_fn=$(echo "$check_cmd" | awk '{print $1}')
+    local check_arg=$(echo "$check_cmd" | awk '{print $2}')
+    local rc=0
+    $check_fn $check_arg 2>/dev/null || rc=$?
+    case $rc in
+      0)
         success "${name}"
+        mark_step_done "access_${id}" >/dev/null
         pass=$((pass + 1))
         ;;
-      pending)
-        warn "${name} — IT ticket pending"
+      2)
+        warn "${name} — needs manual verification"
         pending_count=$((pending_count + 1))
         ;;
       *)
@@ -83,27 +103,21 @@ run_phase5() {
   done
   echo ""
 
-  # ── Repositories ──────────────────────────────────────────────────
+  # ── Repositories (clone status only — deps are set up by the dev) ──
   echo "${BOLD}Repositories (${TEAM_NAME} team)${NC}"
   for repo_entry in "${REPOS[@]}"; do
     local local_dir=$(echo "$repo_entry" | cut -d: -f2)
-    local stack_type=$(echo "$repo_entry" | cut -d: -f3)
     local repo_path="${CODE_DIR}/${local_dir}"
 
-    if [[ ! -d "$repo_path" ]]; then
-      fail "${local_dir} — not cloned"
-      fail_count=$((fail_count + 1))
-    elif [[ "$stack_type" == "static" ]]; then
+    if [[ -d "$repo_path" ]]; then
       success "${local_dir} — cloned"
       pass=$((pass + 1))
-    elif is_step_done "repo_deps_${local_dir}"; then
-      success "${local_dir} — cloned + deps installed"
-      pass=$((pass + 1))
     else
-      warn "${local_dir} — cloned but deps not installed"
-      pending_count=$((pending_count + 1))
+      fail "${local_dir} — not cloned"
+      fail_count=$((fail_count + 1))
     fi
   done
+  dim "Run 'asdf install' + deps in each repo yourself (see its README)."
   echo ""
 
   # ── Bookmarks & AI ───────────────────────────────────────────────

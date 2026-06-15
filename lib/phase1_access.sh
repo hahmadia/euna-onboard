@@ -5,12 +5,12 @@
 
 gh_org_check() {
   local org="$1"
-  if ! command_exists gh; then return 1; fi
+  if ! command_exists gh; then return 3; fi
   gh api "/orgs/${org}/memberships/$(gh api /user -q .login 2>/dev/null)" &>/dev/null
 }
 
 aws_check() {
-  if ! command_exists aws; then return 1; fi
+  if ! command_exists aws; then return 3; fi
   aws sts get-caller-identity &>/dev/null
 }
 
@@ -29,17 +29,13 @@ gemfury_check() {
 }
 
 npm_check() {
-  if ! command_exists npm; then return 1; fi
+  if ! command_exists npm; then return 3; fi
   npm whoami --registry=https://npm.fury.io/citybase/ &>/dev/null 2>&1
 }
 
 onepassword_check() {
-  if ! command_exists op; then return 1; fi
+  if ! command_exists op; then return 3; fi
   op account list 2>/dev/null | grep -qi "citybase\|euna"
-}
-
-jira_check() {
-  curl -s --connect-timeout 5 "https://eunasolutions.atlassian.net" -o /dev/null -w "%{http_code}" 2>/dev/null | grep -q "200\|302"
 }
 
 browser_check() {
@@ -63,6 +59,7 @@ run_phase1() {
   local pending=()
   local ok=()
   local manual=()
+  local deferred=()
 
   for platform_entry in "${PLATFORMS[@]}"; do
     local id=$(echo "$platform_entry" | cut -d: -f1)
@@ -85,25 +82,32 @@ run_phase1() {
       continue
     fi
 
-    # Run the check
+    # Run the check. Exit codes: 0=ok, 2=manual/browser,
+    # 3=can't verify yet (the CLI it needs is installed in Phase 2),
+    # anything else=no access.
     local check_fn=$(echo "$check_cmd" | awk '{print $1}')
     local check_arg=$(echo "$check_cmd" | awk '{print $2}')
 
-    if [[ "$check_fn" == "browser_check" ]]; then
-      manual+=("$id:$name:$ticket_resource")
-      continue
-    fi
-
-    if $check_fn $check_arg 2>/dev/null; then
-      success "${name} — access confirmed"
-      mark_step_done "access_${id}"
-      ok+=("$name")
-    elif [[ $? -eq 2 ]]; then
-      manual+=("$id:$name:$ticket_resource")
-    else
-      fail "${name} — no access detected"
-      missing+=("$id:$name:$ticket_resource")
-    fi
+    local rc=0
+    $check_fn $check_arg 2>/dev/null || rc=$?
+    case $rc in
+      0)
+        success "${name} — access confirmed"
+        mark_step_done "access_${id}"
+        ok+=("$name")
+        ;;
+      2)
+        manual+=("$id:$name:$ticket_resource")
+        ;;
+      3)
+        dim "${name} — will verify after tools are installed"
+        deferred+=("$name")
+        ;;
+      *)
+        fail "${name} — no access detected"
+        missing+=("$id:$name:$ticket_resource")
+        ;;
+    esac
   done
 
   # Handle items needing manual verification
@@ -132,35 +136,50 @@ run_phase1() {
     fi
   fi
 
-  # Handle missing access
+  # Handle missing access — list everything, then ask once
   if [[ ${#missing[@]} -gt 0 ]]; then
     echo ""
     header "Missing Access — IT Tickets Needed"
-    info "The following platforms need IT tickets. I can open the ticket forms for you."
+    info "These platforms need IT tickets:"
     echo ""
-
     for entry in "${missing[@]}"; do
-      local id=$(echo "$entry" | cut -d: -f1)
       local name=$(echo "$entry" | cut -d: -f2)
       local resource=$(echo "$entry" | cut -d: -f3)
-      local ticket_url=$(build_ticket_url "$resource")
-
       fail "${name}"
-      dim "Ticket URL: ${ticket_url}"
+      dim "Ticket: $(build_ticket_url "$resource")"
+    done
 
-      if confirm "  Open IT ticket for ${name}?"; then
-        if dry_run_guard "open ${ticket_url}"; then
-          open_url "$ticket_url"
+    echo ""
+    if confirm "Open pre-filled IT ticket forms for all ${#missing[@]} of these?"; then
+      for entry in "${missing[@]}"; do
+        local id=$(echo "$entry" | cut -d: -f1)
+        local name=$(echo "$entry" | cut -d: -f2)
+        local resource=$(echo "$entry" | cut -d: -f3)
+        if dry_run_guard "open $(build_ticket_url "$resource")"; then
+          open_url "$(build_ticket_url "$resource")"
         fi
         state_set "access_${id}" "pending"
         pending+=("$name")
-      fi
-    done
+      done
+      success "Opened ${#missing[@]} ticket form(s) — marked as pending."
+    else
+      dim "Skipped. The pre-filled ticket URLs above are there whenever you need them."
+    fi
   fi
 
-  # Team channels reminder
+  # Note any checks we couldn't run yet (their CLIs get installed in Phase 2)
+  if [[ ${#deferred[@]} -gt 0 ]]; then
+    echo ""
+    info "${#deferred[@]} access check(s) deferred until tools are installed — verified in the final report (Phase 5)."
+  fi
+
+  # ── Pause for manual steps before moving on ───────────────────────
   echo ""
-  info "Verify you're in these MS Teams channels:"
+  header "Before we continue — two manual steps"
+  warn "Please do these now. The next phases install tools and may ask for your Mac password, so take your time here first."
+
+  echo ""
+  info "1. Make sure you've joined these MS Teams channels:"
   for ch in "${SHARED_TEAMS_CHANNELS[@]}"; do
     echo "  ${DIM}•${NC} $ch"
   done
@@ -168,12 +187,15 @@ run_phase1() {
     echo "  ${DIM}•${NC} $ch ${CYAN}(${TEAM_NAME} specific)${NC}"
   done
 
-  # GitHub teams.tf reminder
   echo ""
-  info "GitHub team membership:"
-  dim "Find an existing engineer to add your username to:"
+  info "2. Get added to the GitHub team:"
+  dim "Find an existing engineer to create a PR adding your username to teams.tf,"
+  dim "similar to the example PR below:"
   dim "  ${GITHUB_MANAGEMENT_REPO}/blob/master/teams.tf"
   dim "  Example PR: https://github.com/CityBaseInc/github-management/pull/336"
+
+  echo ""
+  wait_for_user "Press Enter once you've joined the channels and requested the teams.tf PR..."
 
   # Summary
   echo ""

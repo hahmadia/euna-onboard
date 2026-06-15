@@ -51,11 +51,10 @@ The script runs 5 phases in order. Each phase is idempotent — safe to re-run i
 - Installs CityBase git commit template
 - Adds k8s aliases and tool config to `.zshrc`
 
-### Phase 3: Repository Setup
+### Phase 3: Clone Repositories
 - Clones all team-specific repos into `~/code/`
-- Installs asdf versions from each repo's `.tool-versions`
-- Runs `mix deps.get`, `npm install`, or `bundle install` per repo
-- Reports which repos succeeded and which need manual attention
+- That's it — it does **not** run `asdf install` or install dependencies. The tools are installed in Phase 2, but setting up each repo (runtime versions + `npm install` / `mix deps.get` / `bundle install`) is left to you, per that repo's README
+- Reports which repos cloned and which need attention (e.g. GitHub access)
 
 ### Phase 4: Bookmarks & AI
 - Generates a Chrome-importable bookmarks HTML file with all environment URLs
@@ -78,7 +77,7 @@ REQUIRED:
 
 OPTIONS:
   --name "Name"       Your full name (for git config)
-  --email "email"     Your @thecitybase.com email
+  --email "email"     Your @eunasolutions.com email
   --phase N           Start from phase N (1-5)
   --dry-run           Preview without making changes
   --verify            Run verification only (Phase 5)
