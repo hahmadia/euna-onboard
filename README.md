@@ -4,18 +4,36 @@ Automated developer onboarding CLI for the Euna Payments engineering org.
 
 Replaces the manual Jira epic cloning process (EADM-615 template) and the Confluence onboarding checklist with a single, idempotent, team-aware script that gets a new developer from zero to productive.
 
-## Quick Start
+## Prerequisites
+
+This script is built to run on a brand-new Mac with nothing installed. The only thing you need up front is **git**, which comes bundled with the Xcode Command Line Tools:
 
 ```bash
-# Clone this repo
-git clone git@github.com:CityBaseInc/euna-onboard.git ~/code/euna-onboard
-
-# Make it executable
-chmod +x ~/code/euna-onboard/euna-onboard.sh
-
-# Run it
-~/code/euna-onboard/euna-onboard.sh --team web --name "Jane Smith"
+xcode-select --install
 ```
+
+Complete the popup it triggers and wait for the install to finish. Everything else — Homebrew, asdf, language runtimes, GPG, shell config — is installed for you in Phase 2.
+
+## Quick Start
+
+The repo is public, so clone it over HTTPS — no SSH keys or GitHub login required:
+
+```bash
+# Clone into Downloads (or anywhere you like)
+git clone https://github.com/hahmadia/euna-onboard.git ~/Downloads/euna-onboard
+cd ~/Downloads/euna-onboard
+
+# Easiest: interactive wizard asks for your team and name
+./euna-onboard.sh
+
+# Or preview without making any changes, then do a real run
+./euna-onboard.sh --dry-run
+./euna-onboard.sh --team web --name "Jane Smith"
+```
+
+The script finds its own location, so it works from anywhere (`~/Downloads`, `~/code`, etc.) and still clones your team repos into `~/code/`. git preserves the executable bit, so `./euna-onboard.sh` runs as-is; if it doesn't, use `bash euna-onboard.sh ...`.
+
+> **Have SSH keys already?** Contributors can clone via `git@github.com:hahmadia/euna-onboard.git` instead.
 
 ## What It Does
 
