@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A single-purpose CLI that onboards a new Euna Payments developer end-to-end: audits platform access, sets up the local dev environment, clones team repos, generates browser/AI config, and verifies the result. It is meant to replace the manual Jira epic + Confluence checklist process. There is no build step, no package manager, and no test framework — it's a tree of Bash/zsh scripts driven by shell-array config files.
+A single-purpose CLI that onboards a new Euna Payments developer end-to-end: audits platform access, sets up the local dev environment, clones team repos, generates browser bookmarks, and verifies the result. It is meant to replace the manual Jira epic + Confluence checklist process. There is no build step, no package manager, and no test framework — it's a tree of Bash/zsh scripts driven by shell-array config files.
 
 ## Running it
 
@@ -25,15 +25,15 @@ Valid teams: `web`, `inperson`, `platform`. There is no single-test command — 
 
 **Orchestrator → phases → shared lib → config.** `euna-onboard.sh` parses args, resolves team, sources the config files and all phase scripts, then calls `run_phase1` … `run_phase5` in order (gated by `--phase`). Each phase is a function defined in its own `lib/phaseN_*.sh` file:
 
-- `phase1_access.sh` — audits access to platforms in the `PLATFORMS` array; each platform names a check function (e.g. `gh_org_check`, `aws_check`). Checks return 0=ok, 1=missing, 2=manual/unknown. Missing items open pre-filled IT ticket forms via `IT_TICKET_BASE`.
+- `phase1_access.sh` — guides self-service access for platforms in the `PLATFORMS` array. Each platform names a check function: `gh_org_check`/`aws_check` auto-confirm if the CLI is authenticated, while `browser_check` always returns non-zero (manual confirmation). When a check can't confirm, it prints self-service steps via `access_guidance` and asks the user; an IT ticket (`IT_TICKET_BASE`) is only a fallback. Re-runs re-check anything left `pending`.
 - `phase2_environment.sh` — Homebrew packages, asdf + plugins, GPG key + git signing, git commit template, `.zshrc` additions.
-- `phase3_repos.sh` — clones each entry in the team's `REPOS` array into `~/code/`, runs `asdf install`, then installs deps by `stack_type` (`elixir`→`mix deps.get`, `node`→`npm install`, `ruby`→`bundle install`, `static`→skip).
-- `phase4_bookmarks.sh` — generates Chrome bookmarks HTML, Warp rules, and `CLAUDE.md` from `config/bookmarks/` and `ai/`.
+- `phase3_repos.sh` — clones each entry in the team's `REPOS` array into `~/code/` and nothing more. It deliberately does **not** run `asdf install` or install dependencies; runtime/dependency setup is left to the developer per each repo's README. (`stack_type` in `REPOS` is now just metadata.)
+- `phase4_bookmarks.sh` — generates the Chrome bookmarks HTML file from `config/bookmarks/`.
 - `phase5_verify.sh` — smoke-tests tools/configs/repos and prints a ✅/⏳/❌ report card.
 
-**`lib/common.sh`** is the shared library every phase relies on: color vars, logging helpers (`info`/`success`/`warn`/`fail`/`step`/`dim`), prompts (`confirm`, `prompt_input`, `prompt_select` → sets `$REPLY`), idempotent file editing (`append_block` with START/END markers), and path vars (`SCRIPT_DIR`, `CONFIG_DIR`, `TEMPLATE_DIR`, `AI_DIR`).
+**`lib/common.sh`** is the shared library every phase relies on: color vars, logging helpers (`info`/`success`/`warn`/`fail`/`step`/`dim`), prompts (`confirm`, `prompt_input`, `prompt_select` → sets `$REPLY`), idempotent file editing (`append_block` with START/END markers), and path vars (`SCRIPT_DIR`, `CONFIG_DIR`, `TEMPLATE_DIR`).
 
-**State & idempotency.** Progress is a JSON file at `~/.euna-onboard-state` (uses `jq` if present, else a grep/sed fallback). Every phase guards work with `is_step_done "<key>"` / `mark_step_done "<key>"`, so re-running is safe and resumes where it left off. `--reset` deletes the state file.
+**State & idempotency.** Progress is a JSON file at `.euna-onboard-state` in the repo root (gitignored; uses `jq` if present, else a grep/sed fallback). Every phase guards work with `is_step_done "<key>"` / `mark_step_done "<key>"`, so re-running is safe and resumes where it left off. `--reset` deletes the state file.
 
 **Dry-run.** Any side-effecting command must be wrapped in `dry_run_guard "<description>"` — it prints the intended action and returns non-zero (skipping execution) when `DRY_RUN=true`. Preserve this pattern when adding new actions.
 

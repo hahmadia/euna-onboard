@@ -23,6 +23,7 @@ fail()     { echo "${RED}✗${NC} $1"; }
 header()   { printf '\n%s━━━ %s ━━━%s\n\n' "${BOLD}${PURPLE}" "$1" "${NC}"; }
 step()     { echo "${CYAN}→${NC} ${BOLD}$1${NC}"; }
 dim()      { echo "${DIM}  $1${NC}"; }
+note()     { echo "  $1"; }   # indented, normal-intensity (readable) text
 progress() { echo "${PURPLE}◆${NC} ${BOLD}$1${NC}"; }
 loading()  { echo -n "${DIM}  ⏳ $1...${NC}"; }
 loaded()   { echo " ${GREEN}done${NC}"; }
@@ -48,7 +49,8 @@ show_wave_banner() {
 }
 
 # ── State Management ────────────────────────────────────────────────
-STATE_FILE="${HOME}/.euna-onboard-state"
+# Lives inside the repo (gitignored) so progress travels with the checkout.
+STATE_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.euna-onboard-state"
 
 state_init() {
   [[ -f "$STATE_FILE" ]] || echo "{}" > "$STATE_FILE"
@@ -207,7 +209,6 @@ append_block() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG_DIR="${SCRIPT_DIR}/config"
 TEMPLATE_DIR="${SCRIPT_DIR}/templates"
-AI_DIR="${SCRIPT_DIR}/ai"
 
 load_config() {
   local conf_file="$1"
@@ -223,7 +224,7 @@ load_config() {
 CODE_DIR="${HOME}/code"
 GITHUB_ORG="CityBaseInc"
 GITHUB_ORG_PAYMENTS="Payments-CityBase"
-CITYBASE_EMAIL_DOMAIN="thecitybase.com"
+EUNA_EMAIL_DOMAIN="eunasolutions.com"
 IT_TICKET_BASE="https://servicedesk.jira.eunasolutions.com/servicedesk/customer/portal/12/group/17/create/101"
 
 # DRY_RUN mode

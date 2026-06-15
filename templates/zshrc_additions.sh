@@ -1,3 +1,10 @@
+# Homebrew (must come before anything that calls `brew`, e.g. asdf below)
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+
 # Kubernetes aliases
 alias k='kubectl'
 alias kdev='kubectl --context=dev'

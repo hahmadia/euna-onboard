@@ -37,12 +37,12 @@ The script finds its own location, so it works from anywhere (`~/Downloads`, `~/
 
 ## What It Does
 
-The script runs 5 phases in order. Each phase is idempotent — safe to re-run if something fails. Progress is saved to `~/.euna-onboard-state` so you can resume where you left off.
+The script runs 5 phases in order. Each phase is idempotent — safe to re-run if something fails. Progress is saved to `.euna-onboard-state` in the repo (gitignored) so you can resume where you left off.
 
 ### Phase 1: Access Audit
-- Checks your access to 12+ platforms (GitHub, AWS, GemFury, NPM, etc.)
-- Opens pre-filled IT ticket forms for any missing access
-- Tracks pending IT tickets so you can move on and re-check later
+- Guides you through self-service access (SSO via the M365 apps portal, or direct logins) for GitHub, AWS, Coralogix, GemFury, NPM, 1Password, Airbrake, Sisense, JIRA, etc.
+- Auto-confirms what it can (e.g. GitHub/AWS when your CLI is already signed in); otherwise opens the page and asks you to confirm
+- Opens a pre-filled IT ticket only as a fallback for access you still can't get, and re-checks those on the next run
 
 ### Phase 2: Environment Setup
 - Installs Homebrew packages (gpg, asdf, kubectl, k9s, stern, etc.)
@@ -51,17 +51,14 @@ The script runs 5 phases in order. Each phase is idempotent — safe to re-run i
 - Installs CityBase git commit template
 - Adds k8s aliases and tool config to `.zshrc`
 
-### Phase 3: Repository Setup
+### Phase 3: Clone Repositories
 - Clones all team-specific repos into `~/code/`
-- Installs asdf versions from each repo's `.tool-versions`
-- Runs `mix deps.get`, `npm install`, or `bundle install` per repo
-- Reports which repos succeeded and which need manual attention
+- That's it — it does **not** run `asdf install` or install dependencies. The tools are installed in Phase 2, but setting up each repo (runtime versions + `npm install` / `mix deps.get` / `bundle install`) is left to you, per that repo's README
+- Reports which repos cloned and which need attention (e.g. GitHub access)
 
-### Phase 4: Bookmarks & AI
+### Phase 4: Bookmarks
 - Generates a Chrome-importable bookmarks HTML file with all environment URLs
 - Bookmarks are team-aware (Web gets RevM/NFE links, InPerson gets POS/Kiosk, etc.)
-- Installs Warp rules for repo abbreviations and team context
-- Sets up `CLAUDE.md` with architecture context for Claude Code
 
 ### Phase 5: Verification
 - Smoke-tests all tools, configs, access, and repos
@@ -78,7 +75,7 @@ REQUIRED:
 
 OPTIONS:
   --name "Name"       Your full name (for git config)
-  --email "email"     Your @thecitybase.com email
+  --email "email"     Your @eunasolutions.com email
   --phase N           Start from phase N (1-5)
   --dry-run           Preview without making changes
   --verify            Run verification only (Phase 5)
@@ -99,19 +96,12 @@ Each team has its own config file in `config/` that defines:
 | InPerson | `config/inperson.conf` | cb_pos, pos-frontend, kiosk_interface, device_drivers, etc. |
 | Platform | `config/platform.conf` | Ghenghis, GQL Interface, FLS, CATO, cb_relay, etc. |
 
-## AI Tools
-
-The script installs:
-- **`CLAUDE.md`** — Architecture context, repo dependency graph, common commands, and troubleshooting FAQ for Claude Code
-- **Warp rules** — Repo abbreviations and team context so Warp AI understands your codebase
-
 ## Contributing
 
 To update the onboarding process:
 1. Edit the relevant config file in `config/`
 2. Update bookmark URLs in `config/bookmarks/`
-3. Update the AI context in `ai/CLAUDE.md`
-4. Test with `--dry-run` before merging
+3. Test with `--dry-run` before merging
 
 ## Acknowledgments
 

@@ -60,64 +60,66 @@ run_phase5() {
   echo ""
 
   # ── Platform Access ───────────────────────────────────────────────
+  # Tools are installed by now, so re-run any check that isn't already
+  # confirmed or waiting on an IT ticket — this is the accurate audit.
   echo "${BOLD}Platform Access${NC}"
   for platform_entry in "${PLATFORMS[@]}"; do
     local id=$(echo "$platform_entry" | cut -d: -f1)
     local name=$(echo "$platform_entry" | cut -d: -f2)
+    local check_cmd=$(echo "$platform_entry" | cut -d: -f3)
 
     local state=$(state_get "access_${id}")
-    case "$state" in
-      done)
-        success "${name}"
-        pass=$((pass + 1))
-        ;;
-      pending)
-        warn "${name} — IT ticket pending"
-        pending_count=$((pending_count + 1))
-        ;;
-      *)
-        fail "${name} — not verified"
-        fail_count=$((fail_count + 1))
-        ;;
-    esac
-  done
-  echo ""
-
-  # ── Repositories ──────────────────────────────────────────────────
-  echo "${BOLD}Repositories (${TEAM_NAME} team)${NC}"
-  for repo_entry in "${REPOS[@]}"; do
-    local local_dir=$(echo "$repo_entry" | cut -d: -f2)
-    local stack_type=$(echo "$repo_entry" | cut -d: -f3)
-    local repo_path="${CODE_DIR}/${local_dir}"
-
-    if [[ ! -d "$repo_path" ]]; then
-      fail "${local_dir} — not cloned"
-      fail_count=$((fail_count + 1))
-    elif [[ "$stack_type" == "static" ]]; then
-      success "${local_dir} — cloned"
+    if [[ "$state" == "done" ]]; then
+      success "${name}"
       pass=$((pass + 1))
-    elif is_step_done "repo_deps_${local_dir}"; then
-      success "${local_dir} — cloned + deps installed"
+      continue
+    fi
+    if [[ "$state" == "pending" ]]; then
+      warn "${name} — awaiting access (re-run '--phase 1' once granted)"
+      pending_count=$((pending_count + 1))
+      continue
+    fi
+
+    # Try to auto-confirm now that Phase 2 has installed the CLIs; anything
+    # we can't confirm is an action item, not a hard failure.
+    local check_fn=$(echo "$check_cmd" | awk '{print $1}')
+    local check_arg=$(echo "$check_cmd" | awk '{print $2}')
+    local rc=0
+    $check_fn $check_arg 2>/dev/null || rc=$?
+    if [[ $rc -eq 0 ]]; then
+      success "${name}"
+      mark_step_done "access_${id}" >/dev/null
       pass=$((pass + 1))
     else
-      warn "${local_dir} — cloned but deps not installed"
+      warn "${name} — not confirmed (self-service; re-run '--phase 1')"
       pending_count=$((pending_count + 1))
     fi
   done
   echo ""
 
-  # ── Bookmarks & AI ───────────────────────────────────────────────
-  echo "${BOLD}Bookmarks & AI${NC}"
+  # ── Repositories (clone status only — deps are set up by the dev) ──
+  echo "${BOLD}Repositories (${TEAM_NAME} team)${NC}"
+  for repo_entry in "${REPOS[@]}"; do
+    local local_dir=$(echo "$repo_entry" | cut -d: -f2)
+    local repo_path="${CODE_DIR}/${local_dir}"
+
+    if [[ -d "$repo_path" ]]; then
+      success "${local_dir} — cloned"
+      pass=$((pass + 1))
+    else
+      fail "${local_dir} — not cloned"
+      fail_count=$((fail_count + 1))
+    fi
+  done
+  dim "Run 'asdf install' + deps in each repo yourself (see its README)."
+  echo ""
+
+  # ── Bookmarks ─────────────────────────────────────────────────────
+  echo "${BOLD}Bookmarks${NC}"
   if is_step_done "bookmarks_generated"; then
     success "Chrome bookmarks generated"
   else
     fail "Chrome bookmarks not generated"
-  fi
-
-  if [[ -f "${CODE_DIR}/CLAUDE.md" ]]; then
-    success "CLAUDE.md installed"
-  else
-    warn "CLAUDE.md not installed"
   fi
   echo ""
 
@@ -149,8 +151,6 @@ run_phase5() {
   echo "  5. Complete your compliance training: ${COMPLIANCE_TRAINING_URL}"
   echo "  6. Write your onboarding feedback: ${CONFLUENCE_ONBOARDING}"
   echo ""
-  dim "Tip: Use Claude Code or Warp AI to ask questions about the codebase!"
-  dim "Example: 'What repos do I need running to test Revenue Management Dashboard locally?'"
 }
 
 # ── Helper functions ────────────────────────────────────────────────

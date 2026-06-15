@@ -1,68 +1,123 @@
 #!/bin/bash
-# phase1_access.sh — Audit platform access and open IT tickets for gaps
+# phase1_access.sh — Guide self-service platform access and confirm it
+#
+# Most access is self-service (SSO via the M365 apps portal, or a direct
+# login). For each platform we try to auto-confirm via a CLI check; if we
+# can't, we print the self-service steps, open the relevant page, and ask you
+# to confirm. IT tickets are only a fallback for anything that still can't be
+# confirmed. Re-running re-checks anything previously left pending.
 
-# ── Platform-specific check functions ───────────────────────────────
+# ── Platform check functions ────────────────────────────────────────
+# Exit codes: 0 = confirmed, anything else = couldn't confirm automatically.
+# (browser_check always defers to manual confirmation.)
 
 gh_org_check() {
   local org="$1"
-  if ! command_exists gh; then return 1; fi
+  command_exists gh || return 1
   gh api "/orgs/${org}/memberships/$(gh api /user -q .login 2>/dev/null)" &>/dev/null
 }
 
 aws_check() {
-  if ! command_exists aws; then return 1; fi
+  command_exists aws || return 1
   aws sts get-caller-identity &>/dev/null
 }
 
-vpn_check() {
-  # Try to reach an internal endpoint (only works on VPN)
-  curl -s --connect-timeout 3 "https://argodev.cityba.se" &>/dev/null
-}
-
-jumpcloud_check() {
-  # No reliable CLI check — prompt user
-  return 2  # "unknown" status
-}
-
-gemfury_check() {
-  [[ -n "$GEMFURY_TOKEN" ]] || [[ -n "$BUNDLE_GEM__FURY__IO" ]] || grep -q "fury" ~/.bundle/config 2>/dev/null
-}
-
-npm_check() {
-  if ! command_exists npm; then return 1; fi
-  npm whoami --registry=https://npm.fury.io/citybase/ &>/dev/null 2>&1
-}
-
-onepassword_check() {
-  if ! command_exists op; then return 1; fi
-  op account list 2>/dev/null | grep -qi "citybase\|euna"
-}
-
-jira_check() {
-  curl -s --connect-timeout 5 "https://eunasolutions.atlassian.net" -o /dev/null -w "%{http_code}" 2>/dev/null | grep -q "200\|302"
-}
-
 browser_check() {
-  return 2  # Always needs manual verification
+  return 1  # always needs manual confirmation
 }
 
-# ── IT Ticket URL builder ───────────────────────────────────────────
+# ── IT Ticket URL builder (fallback only) ───────────────────────────
 build_ticket_url() {
   local resource="$1"
   local encoded_resource=$(echo "$resource" | sed 's/ /+/g')
   echo "${IT_TICKET_BASE}?description=Grant+access+to+${encoded_resource}&summary=Grant+access+to+${encoded_resource}"
 }
 
+# Open a URL once per run (dedupes so the M365 portal isn't opened repeatedly).
+OPENED_URLS=()
+open_once() {
+  local url="$1"
+  local u
+  for u in "${OPENED_URLS[@]}"; do
+    [[ "$u" == "$url" ]] && return
+  done
+  OPENED_URLS+=("$url")
+  if dry_run_guard "open ${url}"; then
+    open_url "$url"
+  fi
+}
+
+# ── Self-service guidance per platform ──────────────────────────────
+access_guidance() {
+  local id="$1"
+  case "$id" in
+    github_cb|github_pay)
+      note "Self-service via SSO — no IT ticket needed:"
+      note "  1. Open the M365 apps portal and sign in with your @${EUNA_EMAIL_DOMAIN} account"
+      note "  2. Go to 'Other apps' → '[GH-APP] CityBase Enterprise – CityBaseInc'"
+      open_once "$M365_APPS_URL"
+      ;;
+    aws_iam)
+      note "Self-service via SSO — no IT ticket needed:"
+      note "  1. Open the M365 apps portal → 'AWS IAM Identity Center'"
+      note "  2. Confirm you can see: Payments Production (${AWS_ACCOUNT_ID})"
+      note "     account ${AWS_ACCOUNT_EMAIL}, role '${AWS_SSO_ROLE}'"
+      open_once "$M365_APPS_URL"
+      ;;
+    coralogix)
+      note "Self-service via SSO — no IT ticket needed:"
+      note "  1. Open the M365 apps portal → 'Coralogix-Payments'"
+      note "  2. Enter your @${EUNA_EMAIL_DOMAIN} email, click Continue, then choose 'Login with SSO'"
+      open_once "$M365_APPS_URL"
+      ;;
+    airbrake)
+      note "No IT ticket needed — sign in with GitHub:"
+      note "  1. Go to ${AIRBRAKE_URL} and sign in with your GitHub account"
+      note "  2. Confirm you can see the projects and their errors"
+      open_once "$AIRBRAKE_URL"
+      ;;
+    gemfury)
+      note "1. Log in at ${GEMFURY_DASHBOARD_URL}"
+      note "2. If you can't log in or don't have an account, you'll need an IT ticket (you'll be prompted below)."
+      open_once "$GEMFURY_DASHBOARD_URL"
+      ;;
+    npm_org)
+      note "1. Create an account at npmjs.com if you don't have one"
+      note "2. Confirm you're a member of the @thecb org: ${NPM_MEMBERS_URL}"
+      open_once "$NPM_MEMBERS_URL"
+      ;;
+    onepassword)
+      note "In your 1Password app, confirm the 'Citybase - Technology' vault appears under Euna Solutions"
+      ;;
+    jira)
+      note "Sign in with your @${EUNA_EMAIL_DOMAIN} account:"
+      note "  ${JIRA_URL}"
+      open_once "$JIRA_URL"
+      ;;
+    sisense)
+      note "1. Log in at ${PERISCOPE_URL} and confirm you can see the dashboards"
+      note "2. If you can't log in or don't have an account, you'll need an IT ticket (you'll be prompted below)."
+      open_once "$PERISCOPE_URL"
+      ;;
+    vpn)
+      note "VPN access can't be checked automatically and is requested through IT."
+      note "If you don't already have it, open a ticket below and re-run Phase 1 once IT grants it."
+      ;;
+    *)
+      note "Confirm you can access this platform."
+      ;;
+  esac
+}
+
 # ── Main access audit ──────────────────────────────────────────────
 run_phase1() {
   header "Phase 1: Access Audit"
-  info "Checking your access to required platforms..."
+  info "Most access is self-service via SSO — I'll guide you through each one and confirm it."
   echo ""
 
-  local missing=()
-  local pending=()
   local ok=()
-  local manual=()
+  local needs=()   # "id:name:resource" — couldn't confirm; candidates for an IT ticket
+  OPENED_URLS=()
 
   for platform_entry in "${PLATFORMS[@]}"; do
     local id=$(echo "$platform_entry" | cut -d: -f1)
@@ -70,97 +125,89 @@ run_phase1() {
     local check_cmd=$(echo "$platform_entry" | cut -d: -f3)
     local ticket_resource=$(echo "$platform_entry" | cut -d: -f4)
 
-    # Check if already marked as done in state
+    # Already confirmed on a previous run
     if is_step_done "access_${id}"; then
       success "${name} — previously verified"
       ok+=("$name")
       continue
     fi
 
-    # Check if marked as pending (IT ticket opened)
-    local pending_state=$(state_get "access_${id}")
-    if [[ "$pending_state" == "pending" ]]; then
-      warn "${name} — IT ticket pending"
-      pending+=("$name")
-      continue
-    fi
-
-    # Run the check
     local check_fn=$(echo "$check_cmd" | awk '{print $1}')
     local check_arg=$(echo "$check_cmd" | awk '{print $2}')
 
-    if [[ "$check_fn" == "browser_check" ]]; then
-      manual+=("$id:$name:$ticket_resource")
+    # Previously opened an IT ticket — re-check it on this run instead of
+    # leaving it stuck as "pending" forever.
+    if [[ "$(state_get "access_${id}")" == "pending" ]]; then
+      local rc=0
+      $check_fn $check_arg 2>/dev/null || rc=$?
+      if [[ $rc -eq 0 ]]; then
+        success "${name} — access now confirmed"
+        mark_step_done "access_${id}"
+        ok+=("$name")
+      elif confirm "${name} — have you received access since the IT ticket?"; then
+        mark_step_done "access_${id}"
+        ok+=("$name")
+      else
+        warn "${name} — still pending"
+      fi
       continue
     fi
 
-    if $check_fn $check_arg 2>/dev/null; then
+    # First time: try to auto-confirm via the CLI check…
+    local rc=0
+    $check_fn $check_arg 2>/dev/null || rc=$?
+    if [[ $rc -eq 0 ]]; then
       success "${name} — access confirmed"
       mark_step_done "access_${id}"
       ok+=("$name")
-    elif [[ $? -eq 2 ]]; then
-      manual+=("$id:$name:$ticket_resource")
+      continue
+    fi
+
+    # …otherwise guide the user through self-service and ask them to confirm.
+    echo ""
+    step "${name}"
+    access_guidance "$id"
+    if confirm "  Can you access ${name}?"; then
+      mark_step_done "access_${id}"
+      ok+=("$name")
     else
-      fail "${name} — no access detected"
-      missing+=("$id:$name:$ticket_resource")
+      needs+=("$id:$name:$ticket_resource")
     fi
   done
 
-  # Handle items needing manual verification
-  if [[ ${#manual[@]} -gt 0 ]]; then
+  # IT ticket fallback — only for what still couldn't be confirmed
+  if [[ ${#needs[@]} -gt 0 ]]; then
     echo ""
-    info "The following require manual verification (browser-based):"
-    for entry in "${manual[@]}"; do
-      local id=$(echo "$entry" | cut -d: -f1)
-      local name=$(echo "$entry" | cut -d: -f2)
-      echo "  ${YELLOW}?${NC} ${name}"
+    header "Still need access"
+    info "Couldn't confirm these. If self-service didn't work, an IT ticket is the fallback:"
+    echo ""
+    local entry
+    for entry in "${needs[@]}"; do
+      fail "$(echo "$entry" | cut -d: -f2)"
     done
 
-    if confirm "Would you like to verify these now?"; then
-      for entry in "${manual[@]}"; do
+    echo ""
+    if confirm "Open pre-filled IT ticket forms for these ${#needs[@]}?"; then
+      for entry in "${needs[@]}"; do
         local id=$(echo "$entry" | cut -d: -f1)
-        local name=$(echo "$entry" | cut -d: -f2)
         local resource=$(echo "$entry" | cut -d: -f3)
-
-        if confirm "  Do you have access to ${name}?"; then
-          mark_step_done "access_${id}"
-          ok+=("$name")
-        else
-          missing+=("$entry")
-        fi
+        open_once "$(build_ticket_url "$resource")"
+        state_set "access_${id}" "pending"
       done
+      success "Opened ${#needs[@]} ticket form(s) — re-run Phase 1 once IT grants access."
+    else
+      dim "Skipped. Re-run Phase 1 anytime to confirm once you have access."
+      dim "Stuck? Ask in the Developer Hotline channel."
     fi
   fi
 
-  # Handle missing access
-  if [[ ${#missing[@]} -gt 0 ]]; then
-    echo ""
-    header "Missing Access — IT Tickets Needed"
-    info "The following platforms need IT tickets. I can open the ticket forms for you."
-    echo ""
-
-    for entry in "${missing[@]}"; do
-      local id=$(echo "$entry" | cut -d: -f1)
-      local name=$(echo "$entry" | cut -d: -f2)
-      local resource=$(echo "$entry" | cut -d: -f3)
-      local ticket_url=$(build_ticket_url "$resource")
-
-      fail "${name}"
-      dim "Ticket URL: ${ticket_url}"
-
-      if confirm "  Open IT ticket for ${name}?"; then
-        if dry_run_guard "open ${ticket_url}"; then
-          open_url "$ticket_url"
-        fi
-        state_set "access_${id}" "pending"
-        pending+=("$name")
-      fi
-    done
-  fi
-
-  # Team channels reminder
+  # ── Pause for manual steps before moving on ───────────────────────
   echo ""
-  info "Verify you're in these MS Teams channels:"
+  header "Before we continue — two manual steps"
+  warn "Please do these now. The next phases install tools and may ask for your Mac password, so take your time here first."
+
+  echo ""
+  info "1. Make sure you've joined these MS Teams channels:"
   for ch in "${SHARED_TEAMS_CHANNELS[@]}"; do
     echo "  ${DIM}•${NC} $ch"
   done
@@ -168,21 +215,22 @@ run_phase1() {
     echo "  ${DIM}•${NC} $ch ${CYAN}(${TEAM_NAME} specific)${NC}"
   done
 
-  # GitHub teams.tf reminder
   echo ""
-  info "GitHub team membership:"
-  dim "Find an existing engineer to add your username to:"
+  info "2. Get added to the GitHub team:"
+  dim "Find an existing engineer to create a PR adding your username to teams.tf,"
+  dim "similar to the example PR below:"
   dim "  ${GITHUB_MANAGEMENT_REPO}/blob/master/teams.tf"
   dim "  Example PR: https://github.com/CityBaseInc/github-management/pull/336"
+
+  echo ""
+  wait_for_user "Press Enter once you've joined the channels and requested the teams.tf PR..."
 
   # Summary
   echo ""
   header "Access Audit Summary"
-  success "${#ok[@]} platforms confirmed"
-  [[ ${#pending[@]} -gt 0 ]] && warn "${#pending[@]} IT tickets pending"
-  [[ ${#missing[@]} -gt 0 ]] && fail "${#missing[@]} still need attention"
+  success "${#ok[@]} of ${#PLATFORMS[@]} platforms confirmed"
+  [[ ${#needs[@]} -gt 0 ]] && warn "${#needs[@]} still need attention — re-run Phase 1 once you've sorted them out"
 
   echo ""
-  info "You can re-run this phase anytime to re-check pending items."
-  info "Tip: Some access (like GemFury token) may take a day — move on to Phase 2."
+  info "Re-run this phase anytime ('--phase 1') to confirm access you've since gained."
 }
