@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/bin/bash
 # phase1_access.sh — Audit platform access and open IT tickets for gaps
 
 # ── Platform-specific check functions ───────────────────────────────

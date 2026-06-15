@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/bin/bash
 # phase4_bookmarks.sh — Generate Chrome bookmarks HTML + install AI/Warp config
 
 run_phase4() {

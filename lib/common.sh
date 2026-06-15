@@ -1,26 +1,26 @@
-#!/usr/bin/env zsh
+#!/bin/bash
 # common.sh — Shared utilities for euna-onboard
 # Colors, logging, state management, user prompts
 
 # ── Colors ──────────────────────────────────────────────────────────
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-MAGENTA='\033[1;35m'
-CYAN='\033[0;36m'
-WHITE='\033[1;37m'
-BOLD='\033[1m'
-DIM='\033[2m'
-NC='\033[0m' # No Color
+RED=$'\033[0;31m'
+GREEN=$'\033[0;32m'
+YELLOW=$'\033[1;33m'
+BLUE=$'\033[0;34m'
+PURPLE=$'\033[0;35m'
+MAGENTA=$'\033[1;35m'
+CYAN=$'\033[0;36m'
+WHITE=$'\033[1;37m'
+BOLD=$'\033[1m'
+DIM=$'\033[2m'
+NC=$'\033[0m' # No Color
 
 # ── Logging ─────────────────────────────────────────────────────────
 info()     { echo "${BLUE}▸${NC} $1"; }
 success()  { echo "${GREEN}✓${NC} $1"; }
 warn()     { echo "${YELLOW}⚠${NC} $1"; }
 fail()     { echo "${RED}✗${NC} $1"; }
-header()   { echo "\n${BOLD}${PURPLE}━━━ $1 ━━━${NC}\n"; }
+header()   { printf '\n%s━━━ %s ━━━%s\n\n' "${BOLD}${PURPLE}" "$1" "${NC}"; }
 step()     { echo "${CYAN}→${NC} ${BOLD}$1${NC}"; }
 dim()      { echo "${DIM}  $1${NC}"; }
 progress() { echo "${PURPLE}◆${NC} ${BOLD}$1${NC}"; }
@@ -109,8 +109,8 @@ prompt_choice() {
   local options=("$@")
   local num_opts=${#options[@]}
   echo "${YELLOW}?${NC} ${prompt}" >&2
-  for (( i=1; i<=num_opts; i++ )); do
-    echo "  ${BOLD}${PURPLE}${i})${NC} ${options[$i]}" >&2
+  for (( i=0; i<num_opts; i++ )); do
+    echo "  ${BOLD}${PURPLE}$((i+1)))${NC} ${options[$i]}" >&2
   done
   local choice
   echo "" >&2
@@ -120,7 +120,7 @@ prompt_choice() {
     echo -n "  ${RED}✗${NC} Please enter 1-${num_opts}: " >&2
     read -r choice
   done
-  echo "${options[$choice]}"
+  echo "${options[$((choice-1))]}"
 }
 
 # Interactive select with descriptions
@@ -138,8 +138,8 @@ prompt_select() {
   echo "" >&2
   echo "${YELLOW}?${NC} ${BOLD}${prompt}${NC}" >&2
   echo "" >&2
-  for (( i=1; i<=num; i++ )); do
-    echo "  ${PURPLE}${BOLD}${i})${NC}  ${BOLD}${values[$i]}${NC}" >&2
+  for (( i=0; i<num; i++ )); do
+    echo "  ${PURPLE}${BOLD}$((i+1)))${NC}  ${BOLD}${values[$i]}${NC}" >&2
     echo "      ${DIM}${descs[$i]}${NC}" >&2
   done
   echo "" >&2
@@ -150,7 +150,7 @@ prompt_select() {
     echo -n "  ${RED}✗${NC} Please enter 1-${num}: " >&2
     read -r choice
   done
-  REPLY="${values[$choice]}"
+  REPLY="${values[$((choice-1))]}"
 }
 
 wait_for_user() {
@@ -204,7 +204,7 @@ append_block() {
 }
 
 # ── Config Loading ──────────────────────────────────────────────────
-SCRIPT_DIR="${0:A:h}/.."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG_DIR="${SCRIPT_DIR}/config"
 TEMPLATE_DIR="${SCRIPT_DIR}/templates"
 AI_DIR="${SCRIPT_DIR}/ai"

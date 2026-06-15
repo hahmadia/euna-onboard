@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/bin/bash
 # phase2_environment.sh — Install tools, configure git, shell, GPG
 
 run_phase2() {
