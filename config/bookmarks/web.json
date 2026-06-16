@@ -12,7 +12,7 @@
       "NFE SF Dev (your ns)": "https://san-fran-{namespace}.dev.cityba.se/login"
     },
     "Navigate Frontend (Cityville)": {
-      "NFE Cityville Serve": "https://cityville-serve.uat.cityba.se/login",
+      "NFE Cityville Serve": "https://cityville-serve.uat.cityba.se/",
       "NFE Cityville Seeds": "https://cityville-seeds.uat.cityba.se/login",
       "NFE Cityville Dev (your ns)": "https://cityville-{namespace}.dev.cityba.se/login",
       "NFE Cityville Demo": "https://cityville-demos.uat.cityba.se/"

@@ -1,23 +1,28 @@
 {
   "Euna Payments": {
     "DevOps": {
-      "Argo Dev": "https://argodev.cityba.se/applications",
-      "Argo UAT": "https://argouat.cityba.se/applications",
-      "Argo Prod": "https://argoprod.cityba.se/applications",
+      "Argo Dev": "https://argodev.cityba.se/",
+      "Argo UAT": "https://argouat.cityba.se/",
+      "Argo Prod": "https://argoprod.cityba.se/",
       "Coralogix": "https://payments.app.cx498.coralogix.com/#/dashboard",
-      "Airbrake": "https://citybase.airbrake.io/projects",
+      "Airbrake": "https://citybase.airbrake.io/",
       "Grafana Prod": "https://grafana.prod.cityba.se/login"
     },
+    "CBOPS": {
+      "CBOPS Dev": "https://cbops.dev.cityba.se/",
+      "CBOPS UAT": "https://cbops.uat.cityba.se/",
+      "CBOPS Prod": "https://cbops.prod.cityba.se/"
+    },
     "Tools": {
-      "JIRA": "https://eunasolutions.atlassian.net/",
-      "JumpCloud Console": "https://console.jumpcloud.com/login#/",
+      "JIRA": "https://eunasolutions.atlassian.net/jira/for-you",
+      "JumpCloud Console": "https://console.jumpcloud.com/login",
       "Sisense (Periscope)": "https://app.periscopedata.com/",
       "Mailcatcher UAT": "https://mailcatcher-default.uat.cityba.se/",
-      "Demo Dashboard": "https://demo-dashboard-demos.uat.cityba.se/demos",
+      "Demo Dashboard": "https://demo-dashboard-demos.uat.cityba.se/account-data",
       "IT Service Desk": "https://servicedesk.jira.eunasolutions.com/servicedesk/customer/portal/12"
     },
     "Okta": {
-      "Okta Dev": "https://dev-747917-admin.okta.com/admin/dashboard",
+      "Okta Dev": "https://citybase-dev-admin.oktapreview.com/",
       "Okta UAT": "https://citybase-admin.oktapreview.com/admin/dashboard",
       "Okta Prod": "https://citybase-admin.okta.com/admin/dashboard"
     },
