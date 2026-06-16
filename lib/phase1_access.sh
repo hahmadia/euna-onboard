@@ -1,30 +1,11 @@
 #!/bin/bash
-# phase1_access.sh — Guide self-service platform access and confirm it
+# phase1_access.sh — Guide platform access (self-service vs IT ticket)
 #
-# Most access is self-service (SSO via the M365 apps portal, or a direct
-# login). For each platform we try to auto-confirm via a CLI check; if we
-# can't, we print the self-service steps, open the relevant page, and ask you
-# to confirm. IT tickets are only a fallback for anything that still can't be
-# confirmed. Re-running re-checks anything previously left pending.
-
-# ── Platform check functions ────────────────────────────────────────
-# Exit codes: 0 = confirmed, anything else = couldn't confirm automatically.
-# (browser_check always defers to manual confirmation.)
-
-gh_org_check() {
-  local org="$1"
-  command_exists gh || return 1
-  gh api "/orgs/${org}/memberships/$(gh api /user -q .login 2>/dev/null)" &>/dev/null
-}
-
-aws_check() {
-  command_exists aws || return 1
-  aws sts get-caller-identity &>/dev/null
-}
-
-browser_check() {
-  return 1  # always needs manual confirmation
-}
+# Each platform has an access_type (see config): self_service platforms print
+# steps via access_guidance and ask you to confirm (an IT ticket is the
+# fallback); it_ticket platforms assume no access on the first run, open a
+# pre-filled ticket, and only ask whether access came through on later runs.
+# Re-running re-checks anything previously left pending.
 
 # ── IT Ticket URL builder (fallback only) ───────────────────────────
 build_ticket_url() {
@@ -45,6 +26,122 @@ open_once() {
   if dry_run_guard "open ${url}"; then
     open_url "$url"
   fi
+}
+
+# ── IT ticket form autofill (console snippet) ───────────────────────
+# Generate a personalized JS snippet that fills the JSM "Access Issue" form
+# (category, summary, resource, impact, urgency, description) and copy it to the
+# clipboard; the user pastes it into the DevTools console on the ticket page.
+js_escape() {
+  printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
+}
+
+copy_ticket_autofill() {
+  local resources=("$@")
+  [[ ${#resources[@]} -eq 0 ]] && return 0
+  command_exists pbcopy || return 0
+
+  local name_js email_js team_js
+  name_js=$(js_escape "${DEV_NAME:-}")
+  email_js=$(js_escape "${DEV_EMAIL:-}")
+  team_js=$(js_escape "${TEAM_DISPLAY:-}")
+
+  local tickets_js="" r summary desc
+  for r in "${resources[@]}"; do
+    summary="Grant access to ${r}"
+    desc="Please grant ${DEV_NAME} (${DEV_EMAIL}, ${TEAM_DISPLAY}) access to ${r}."
+    tickets_js+="    { resource: \"$(js_escape "$r")\", summary: \"$(js_escape "$summary")\", description: \"$(js_escape "$desc")\" },"$'\n'
+  done
+
+  local snippet
+  snippet=$(cat <<JS
+(async () => {
+  /* euna-onboard — Access Issue autofill. Paste in the DevTools console on the ticket page. */
+  const requester = { name: "${name_js}", email: "${email_js}", team: "${team_js}" };
+  const tickets = [
+${tickets_js}  ];
+
+  /* Access Issue form (JSM portal 12 / request type 101). Single-select dropdowns: */
+  const SELECTS = {
+    "#customfield_10199": "User Account",             /* Access Issue Category */
+    "#customfield_10200": "Single User",              /* Impact */
+    "#customfield_10201": "Work Impacted Negatively", /* Urgency */
+  };
+  const RESOURCE_INPUT = "#customfield_10068";        /* Resource — CMDB async picker */
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const setNativeValue = (el, value) => {
+    const proto = el.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(proto, "value").set.call(el, value);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+  const options = () => [...document.querySelectorAll("[id*='-option'], [role='option']")];
+  const openMenu = (input) => {
+    (input.closest("[class*='-control']") || input.parentElement)
+      .dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown", keyCode: 40 }));
+  };
+  const pickSelect = async (sel, label) => {
+    const input = document.querySelector(sel);
+    if (!input) return console.warn("euna-onboard: missing", sel);
+    input.focus(); openMenu(input); await sleep(250);
+    const opt = options().find(o => o.textContent.trim() === label)
+             || options().find(o => o.textContent.trim().toLowerCase().startsWith(label.toLowerCase()));
+    if (opt) { opt.click(); await sleep(120); }
+    else { console.warn("euna-onboard: option not found:", label, "(pick manually)");
+           input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Escape", keyCode: 27 })); }
+  };
+  const pickResource = async (sel, terms) => {
+    const input = document.querySelector(sel);
+    if (!input) return console.warn("euna-onboard: missing", sel);
+    for (const term of terms) {
+      input.focus(); setNativeValue(input, term); await sleep(900);
+      const opt = options().find(o => o.textContent.trim().toLowerCase().includes(term.toLowerCase()));
+      if (opt) { opt.click(); await sleep(150); return; }
+    }
+    console.warn("euna-onboard: no CMDB match for Resource — pick it manually");
+  };
+
+  /* Match the ticket to the summary pre-filled via the URL, else use the first. */
+  const summaryEl = document.querySelector("#summary");
+  const current = (summaryEl || {}).value || "";
+  const ticket = tickets.find(t => current && current.includes(t.resource)) || tickets[0];
+
+  /* Summary + description are usually pre-filled by the ticket URL; set if empty. */
+  if (summaryEl && !summaryEl.value) setNativeValue(summaryEl, ticket.summary);
+  const descEl = document.querySelector("#ak-editor-textarea");
+  if (descEl && !descEl.textContent.trim()) { descEl.focus(); document.execCommand("insertText", false, ticket.description); }
+
+  for (const [sel, label] of Object.entries(SELECTS)) await pickSelect(sel, label);
+  await pickResource(RESOURCE_INPUT, [ticket.resource, "Other"]);
+  console.log("euna-onboard: autofill done for", ticket.resource, "— review the dropdowns, then Send.");
+})();
+JS
+)
+
+  if dry_run_guard "copy IT-ticket autofill snippet to clipboard"; then
+    printf '%s' "$snippet" | pbcopy
+  fi
+}
+
+# ── Open one IT ticket, paced and with autofill help ────────────────
+# Explains what's about to happen, copies this ticket's autofill snippet, and
+# waits for the developer before opening the pre-filled form — so a browser tab
+# never just appears unannounced. Used for every ticket we open.
+open_ticket() {
+  local name="$1" resource="$2"
+  echo ""
+  step "IT ticket — ${name}"
+  note "A browser window will open with a pre-filled Access Issue form."
+  note "I'm copying a JavaScript autofill snippet to your clipboard now."
+  note "When the window opens:"
+  note "  1. Open the DevTools console (⌥⌘J)."
+  note "  2. Paste (⌘V) and run it to autofill the dropdowns."
+  note "  3. Review every field, then click Send to submit."
+  copy_ticket_autofill "$resource"
+  wait_for_user "Press Enter to open the pre-filled ticket for ${name}..."
+  open_once "$(build_ticket_url "$resource")"
+  wait_for_user "Press Enter once you've pasted the snippet, reviewed, and submitted (or to continue)..."
 }
 
 # ── Self-service guidance per platform ──────────────────────────────
@@ -78,17 +175,13 @@ access_guidance() {
       open_once "$AIRBRAKE_URL"
       ;;
     gemfury)
-      note "1. Log in at ${GEMFURY_DASHBOARD_URL}"
-      note "2. If you can't log in or don't have an account, you'll need an IT ticket (you'll be prompted below)."
-      open_once "$GEMFURY_DASHBOARD_URL"
+      note "Requested through IT — a GemFury account is granted via a ticket."
       ;;
     npm_org)
-      note "1. Create an account at npmjs.com if you don't have one"
-      note "2. Confirm you're a member of the @thecb org: ${NPM_MEMBERS_URL}"
-      open_once "$NPM_MEMBERS_URL"
+      note "Requested through IT — @thecb org membership is granted via a ticket."
       ;;
     onepassword)
-      note "In your 1Password app, confirm the 'Citybase - Technology' vault appears under Euna Solutions"
+      note "Requested through IT — the 'Citybase - Technology' vault is granted via a ticket."
       ;;
     jira)
       note "Sign in with your @${EUNA_EMAIL_DOMAIN} account:"
@@ -96,13 +189,12 @@ access_guidance() {
       open_once "$JIRA_URL"
       ;;
     sisense)
-      note "1. Log in at ${PERISCOPE_URL} and confirm you can see the dashboards"
-      note "2. If you can't log in or don't have an account, you'll need an IT ticket (you'll be prompted below)."
-      open_once "$PERISCOPE_URL"
+      note "Requested through IT — Sisense/Periscope access is granted via a ticket."
       ;;
     vpn)
-      note "VPN access can't be checked automatically and is requested through IT."
-      note "If you don't already have it, open a ticket below and re-run Phase 1 once IT grants it."
+      note "VPN access must be requested through IT — open a ticket below if you don't have it."
+      note "Once IT confirms your access, set up the AWS VPN client by following this guide:"
+      note "  ${CONFLUENCE_VPN_SETUP}"
       ;;
     *)
       note "Confirm you can access this platform."
@@ -113,18 +205,18 @@ access_guidance() {
 # ── Main access audit ──────────────────────────────────────────────
 run_phase1() {
   header "Phase 1: Access Audit"
-  info "Most access is self-service via SSO — I'll guide you through each one and confirm it."
+  info "Self-service access I'll guide you through; anything IT-gated I'll open a ticket for."
   echo ""
 
   local ok=()
-  local needs=()   # "id:name:resource" — couldn't confirm; candidates for an IT ticket
+  local needs=()   # "id:name:resource" — self-service the user couldn't confirm
   OPENED_URLS=()
 
   for platform_entry in "${PLATFORMS[@]}"; do
     local id=$(echo "$platform_entry" | cut -d: -f1)
     local name=$(echo "$platform_entry" | cut -d: -f2)
-    local check_cmd=$(echo "$platform_entry" | cut -d: -f3)
     local ticket_resource=$(echo "$platform_entry" | cut -d: -f4)
+    local access_type=$(echo "$platform_entry" | cut -d: -f5)
 
     # Already confirmed on a previous run
     if is_step_done "access_${id}"; then
@@ -133,19 +225,10 @@ run_phase1() {
       continue
     fi
 
-    local check_fn=$(echo "$check_cmd" | awk '{print $1}')
-    local check_arg=$(echo "$check_cmd" | awk '{print $2}')
-
-    # Previously opened an IT ticket — re-check it on this run instead of
-    # leaving it stuck as "pending" forever.
+    # Previously opened an IT ticket — the only place we ask whether access has
+    # come through (never on the first run).
     if [[ "$(state_get "access_${id}")" == "pending" ]]; then
-      local rc=0
-      $check_fn $check_arg 2>/dev/null || rc=$?
-      if [[ $rc -eq 0 ]]; then
-        success "${name} — access now confirmed"
-        mark_step_done "access_${id}"
-        ok+=("$name")
-      elif confirm "${name} — have you received access since the IT ticket?"; then
+      if confirm "${name} — have you received access since the IT ticket?"; then
         mark_step_done "access_${id}"
         ok+=("$name")
       else
@@ -154,21 +237,17 @@ run_phase1() {
       continue
     fi
 
-    # First time: try to auto-confirm via the CLI check…
-    local rc=0
-    $check_fn $check_arg 2>/dev/null || rc=$?
-    if [[ $rc -eq 0 ]]; then
-      success "${name} — access confirmed"
-      mark_step_done "access_${id}"
-      ok+=("$name")
-      continue
-    fi
-
-    # …otherwise guide the user through self-service and ask them to confirm.
+    # First time seeing this platform — behavior depends on access_type.
     echo ""
     step "${name}"
     access_guidance "$id"
-    if confirm "  Can you access ${name}?"; then
+    if [[ "$access_type" == "it_ticket" ]]; then
+      # Assume no access yet: walk the developer through opening a pre-filled ticket.
+      info "Assuming no access yet — let's open a pre-filled IT ticket."
+      open_ticket "$name" "$ticket_resource"
+      state_set "access_${id}" "pending"
+      warn "${name} — ticket opened; re-run Phase 1 once IT grants access."
+    elif confirm "  Can you access ${name}?"; then
       mark_step_done "access_${id}"
       ok+=("$name")
     else
@@ -176,7 +255,7 @@ run_phase1() {
     fi
   done
 
-  # IT ticket fallback — only for what still couldn't be confirmed
+  # IT ticket fallback — for self-service access the user couldn't confirm
   if [[ ${#needs[@]} -gt 0 ]]; then
     echo ""
     header "Still need access"
@@ -191,8 +270,9 @@ run_phase1() {
     if confirm "Open pre-filled IT ticket forms for these ${#needs[@]}?"; then
       for entry in "${needs[@]}"; do
         local id=$(echo "$entry" | cut -d: -f1)
+        local nm=$(echo "$entry" | cut -d: -f2)
         local resource=$(echo "$entry" | cut -d: -f3)
-        open_once "$(build_ticket_url "$resource")"
+        open_ticket "$nm" "$resource"
         state_set "access_${id}" "pending"
       done
       success "Opened ${#needs[@]} ticket form(s) — re-run Phase 1 once IT grants access."
@@ -201,6 +281,9 @@ run_phase1() {
       dim "Stuck? Ask in the Developer Hotline channel."
     fi
   fi
+
+  # VPN client setup guide — fires once VPN access is confirmed.
+  setup_vpn_guide
 
   # ── Pause for manual steps before moving on ───────────────────────
   echo ""
@@ -230,8 +313,27 @@ run_phase1() {
   echo ""
   header "Access Audit Summary"
   success "${#ok[@]} of ${#PLATFORMS[@]} platforms confirmed"
-  [[ ${#needs[@]} -gt 0 ]] && warn "${#needs[@]} still need attention — re-run Phase 1 once you've sorted them out"
+  local still=$(( ${#PLATFORMS[@]} - ${#ok[@]} ))
+  [[ $still -gt 0 ]] && warn "${still} still need attention — re-run Phase 1 once you've sorted them out"
 
   echo ""
   info "Re-run this phase anytime ('--phase 1') to confirm access you've since gained."
+}
+
+# ── VPN client setup (after IT grants access) ───────────────────────
+# Once VPN access is confirmed, point the user to the AWS VPN Client setup
+# guide. The guide covers downloading and configuring the client — no install
+# happens here.
+setup_vpn_guide() {
+  is_step_done "access_vpn" || return 0
+  is_step_done "vpn_setup" && return 0
+
+  echo ""
+  step "AWS VPN Client setup"
+  note "VPN access is granted — set up the AWS VPN Client by following this guide:"
+  note "  ${CONFLUENCE_VPN_SETUP}"
+  if confirm "Open the AWS VPN Client setup guide now?"; then
+    open_once "$CONFLUENCE_VPN_SETUP"
+  fi
+  mark_step_done "vpn_setup"
 }

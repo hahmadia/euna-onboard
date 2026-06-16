@@ -60,13 +60,12 @@ run_phase5() {
   echo ""
 
   # ── Platform Access ───────────────────────────────────────────────
-  # Tools are installed by now, so re-run any check that isn't already
-  # confirmed or waiting on an IT ticket — this is the accurate audit.
+  # Reports each platform from saved state (Phase 1 owns confirmation).
   echo "${BOLD}Platform Access${NC}"
   for platform_entry in "${PLATFORMS[@]}"; do
     local id=$(echo "$platform_entry" | cut -d: -f1)
     local name=$(echo "$platform_entry" | cut -d: -f2)
-    local check_cmd=$(echo "$platform_entry" | cut -d: -f3)
+    local access_type=$(echo "$platform_entry" | cut -d: -f5)
 
     local state=$(state_get "access_${id}")
     if [[ "$state" == "done" ]]; then
@@ -80,20 +79,13 @@ run_phase5() {
       continue
     fi
 
-    # Try to auto-confirm now that Phase 2 has installed the CLIs; anything
-    # we can't confirm is an action item, not a hard failure.
-    local check_fn=$(echo "$check_cmd" | awk '{print $1}')
-    local check_arg=$(echo "$check_cmd" | awk '{print $2}')
-    local rc=0
-    $check_fn $check_arg 2>/dev/null || rc=$?
-    if [[ $rc -eq 0 ]]; then
-      success "${name}"
-      mark_step_done "access_${id}" >/dev/null
-      pass=$((pass + 1))
+    # No state yet — hasn't been run through Phase 1.
+    if [[ "$access_type" == "it_ticket" ]]; then
+      warn "${name} — awaiting IT (re-run '--phase 1')"
     else
       warn "${name} — not confirmed (self-service; re-run '--phase 1')"
-      pending_count=$((pending_count + 1))
     fi
+    pending_count=$((pending_count + 1))
   done
   echo ""
 

@@ -40,9 +40,9 @@ The script finds its own location, so it works from anywhere (`~/Downloads`, `~/
 The script runs 5 phases in order. Each phase is idempotent — safe to re-run if something fails. Progress is saved to `.euna-onboard-state` in the repo (gitignored) so you can resume where you left off.
 
 ### Phase 1: Access Audit
-- Guides you through self-service access (SSO via the M365 apps portal, or direct logins) for GitHub, AWS, Coralogix, GemFury, NPM, 1Password, Airbrake, Sisense, JIRA, etc.
-- Auto-confirms what it can (e.g. GitHub/AWS when your CLI is already signed in); otherwise opens the page and asks you to confirm
-- Opens a pre-filled IT ticket only as a fallback for access you still can't get, and re-checks those on the next run
+- Guides you through self-service access (SSO via the M365 apps portal, or direct logins) for GitHub, AWS, Coralogix, Airbrake, JIRA, etc., and asks you to confirm each
+- For IT-gated access (AWS VPN, GemFury, NPM org, 1Password, Sisense) it assumes you don't have it yet on the first run, opens a pre-filled IT ticket, and copies a console autofill snippet to your clipboard — it only asks whether access came through on later runs
+- Once VPN access is confirmed, points you to the AWS VPN Client setup guide
 
 ### Phase 2: Environment Setup
 - Installs Homebrew packages (gpg, asdf, kubectl, k9s, stern, etc.)

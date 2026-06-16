@@ -310,19 +310,14 @@ EOF
     echo ""
     command_exists pbcopy && pbcopy < "${key_file}.pub" && dim "(Copied to your clipboard)"
     dim "Add it at: https://github.com/settings/ssh/new"
+    dim "To verify: after adding, go to GitHub → Settings → SSH and GPG keys and confirm the key is listed."
     if dry_run_guard "open GitHub SSH key settings"; then
       open_url "https://github.com/settings/ssh/new"
     fi
-    wait_for_user "Press Enter once you've added the key to GitHub..."
-
-    # ssh -T returns 1 even on success, so match the message instead
-    if ! $DRY_RUN; then
-      if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
-        success "GitHub SSH authentication works!"
-      else
-        warn "Couldn't confirm GitHub SSH auth yet — if Phase 3 cloning fails, re-run: ./euna-onboard.sh --phase 2"
-      fi
-    fi
+    echo ""
+    warn "One more step: click 'Configure SSO' next to your new key and Authorize it for"
+    note "  ${GITHUB_ORG} and ${GITHUB_ORG_PAYMENTS} — without this, cloning org repos in Phase 3 will fail."
+    wait_for_user "Press Enter once you've added the key AND authorized SSO..."
   fi
 
   mark_step_done "ssh_setup"
