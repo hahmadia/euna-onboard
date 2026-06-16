@@ -18,7 +18,7 @@ generate_bookmarks() {
     return
   fi
 
-  local bookmark_file="${CODE_DIR}/euna-onboard/euna-bookmarks.html"
+  local bookmark_file="${SCRIPT_DIR}/euna-bookmarks.html"
   local namespace="${DEV_NAMESPACE:-$(echo "$DEV_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')}"
 
   # Start HTML
