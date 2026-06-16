@@ -68,6 +68,7 @@ access_guidance() {
       note "Self-service via SSO — no IT ticket needed:"
       note "  1. Open the M365 apps portal → 'Coralogix-Payments'"
       note "  2. Enter your @${EUNA_EMAIL_DOMAIN} email, click Continue, then choose 'Login with SSO'"
+      note "  3. If asked for a team name, enter 'payments'"
       open_once "$M365_APPS_URL"
       ;;
     airbrake)
