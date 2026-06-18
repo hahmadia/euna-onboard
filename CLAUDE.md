@@ -25,9 +25,9 @@ Valid teams: `web`, `inperson`, `platform`. There is no single-test command — 
 
 **Orchestrator → phases → shared lib → config.** `euna-onboard.sh` parses args, resolves team, sources the config files and all phase scripts, then calls `run_phase1` … `run_phase5` in order (gated by `--phase`). Each phase is a function defined in its own `lib/phaseN_*.sh` file:
 
-- `phase1_access.sh` — guides platform access for entries in the `PLATFORMS` array. Each platform has an `access_type`: `self_service` prints steps via `access_guidance` and asks you to confirm (IT ticket as a fallback if you can't); `it_ticket` assumes no access on the first run, opens a pre-filled ticket (`IT_TICKET_BASE`) plus a clipboard autofill snippet (`copy_ticket_autofill`), and marks the platform `pending`. The `pending` branch is the only place it asks whether IT-gated access has come through. Once `access_vpn` is confirmed, `setup_vpn_guide` points to the AWS VPN Client setup guide. (`check_command` is metadata only — there are no CLI auto-checks.)
+- `phase1_access.sh` — guides platform access for entries in the `PLATFORMS` array. Each platform has an `access_type`: `self_service` prints steps via `access_guidance` and asks you to confirm (IT ticket as a fallback if you can't); `it_ticket` assumes no access on the first run, opens a pre-filled ticket (`IT_TICKET_BASE`) plus a clipboard autofill snippet (`copy_ticket_autofill`), and marks the platform `pending`. The `pending` branch is the only place it asks whether IT-gated access has come through. Once `access_vpn` is confirmed, `setup_vpn_guide` points to the AWS VPN Client setup guide.
 - `phase2_environment.sh` — Homebrew packages, asdf + plugins, GPG key + git signing, git commit template.
-- `phase3_repos.sh` — clones each entry in the team's `REPOS` array into `~/code/` and nothing more. It deliberately does **not** run `asdf install` or install dependencies; runtime/dependency setup is left to the developer per each repo's README. (`stack_type` in `REPOS` is now just metadata.)
+- `phase3_repos.sh` — clones each entry in the team's `REPOS` array into `~/code/` and nothing more. It deliberately does **not** run `asdf install` or install dependencies; runtime/dependency setup is left to the developer per each repo's README.
 - `phase4_bookmarks.sh` — generates the Chrome bookmarks HTML file from `config/bookmarks/`.
 - `phase5_verify.sh` — smoke-tests tools/configs/repos and prints a ✅/⏳/❌ report card.
 
@@ -41,8 +41,8 @@ Valid teams: `web`, `inperson`, `platform`. There is no single-test command — 
 
 Config lives in `config/` and is plain shell sourced into the environment — there is no parser. `shared.conf` loads first, then `<team>.conf`. Several arrays use **colon-delimited records** parsed with `cut -d:`:
 
-- `PLATFORMS` (shared): `id:display_name:check_command:ticket_resource:access_type` (`access_type` ∈ `self_service` | `it_ticket`; `check_command` is metadata)
-- `REPOS` (per team): `org/repo:local_dir:stack_type`
+- `PLATFORMS` (shared): `id:display_name:ticket_resource:access_type` (`access_type` ∈ `self_service` | `it_ticket`)
+- `REPOS` (per team): `org/repo:local_dir`
 
 To change onboarding behavior, edit these arrays rather than the phase logic — e.g. add a repo by appending a `REPOS` line, or add a platform by appending a `PLATFORMS` line (set its `access_type`) plus an `access_guidance` case in `phase1_access.sh`. Confluence/URL constants also live in `shared.conf`.
 

@@ -215,8 +215,8 @@ run_phase1() {
   for platform_entry in "${PLATFORMS[@]}"; do
     local id=$(echo "$platform_entry" | cut -d: -f1)
     local name=$(echo "$platform_entry" | cut -d: -f2)
-    local ticket_resource=$(echo "$platform_entry" | cut -d: -f4)
-    local access_type=$(echo "$platform_entry" | cut -d: -f5)
+    local ticket_resource=$(echo "$platform_entry" | cut -d: -f3)
+    local access_type=$(echo "$platform_entry" | cut -d: -f4)
 
     # Already confirmed on a previous run
     if is_step_done "access_${id}"; then
@@ -305,6 +305,23 @@ run_phase1() {
   dim "similar to the example PR below:"
   dim "  ${GITHUB_MANAGEMENT_REPO}/blob/master/teams.tf"
   dim "  Example PR: https://github.com/CityBaseInc/github-management/pull/336"
+
+  if [[ ${#TEAM_JIRA_BOARDS[@]} -gt 0 || ${#TEAM_MEETINGS[@]} -gt 0 ]]; then
+    echo ""
+    info "For your reference — ${TEAM_NAME} team boards & meetings:"
+    if [[ ${#TEAM_JIRA_BOARDS[@]} -gt 0 ]]; then
+      dim "JIRA boards:"
+      for board in "${TEAM_JIRA_BOARDS[@]}"; do
+        echo "  ${DIM}•${NC} $board"
+      done
+    fi
+    if [[ ${#TEAM_MEETINGS[@]} -gt 0 ]]; then
+      dim "Recurring meetings:"
+      for meeting in "${TEAM_MEETINGS[@]}"; do
+        echo "  ${DIM}•${NC} $meeting"
+      done
+    fi
+  fi
 
   echo ""
   wait_for_user "Press Enter once you've joined the channels and requested the teams.tf PR..."

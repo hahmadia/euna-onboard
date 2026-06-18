@@ -174,6 +174,7 @@ echo "${PURPLE}│${NC}  ${BOLD}Email${NC}      ${BLUE}${DEV_EMAIL}${NC}"
 echo "${PURPLE}│${NC}  ${BOLD}Namespace${NC}  ${DIM}${DEV_NAMESPACE}${NC}"
 $DRY_RUN && echo "${PURPLE}│${NC}  ${BOLD}Mode${NC}       ${YELLOW}DRY RUN${NC}"
 echo "${PURPLE}╰──────────────────────────────────────────────╯${NC}"
+[[ -n "$TEAM_DESCRIPTION" ]] && echo "${DIM}${TEAM_DESCRIPTION}${NC}"
 echo ""
 
 state_set "team" "$TEAM"

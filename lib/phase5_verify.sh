@@ -56,7 +56,7 @@ run_phase5() {
   for platform_entry in "${PLATFORMS[@]}"; do
     local id=$(echo "$platform_entry" | cut -d: -f1)
     local name=$(echo "$platform_entry" | cut -d: -f2)
-    local access_type=$(echo "$platform_entry" | cut -d: -f5)
+    local access_type=$(echo "$platform_entry" | cut -d: -f4)
 
     local state=$(state_get "access_${id}")
     if [[ "$state" == "done" ]]; then
@@ -133,7 +133,17 @@ run_phase5() {
   echo "  4. Explore the architecture via C4 diagrams: ${C4_DIAGRAMS_REPO}"
   echo "  5. Complete your compliance training: ${COMPLIANCE_TRAINING_URL}"
   echo "  6. Write your onboarding feedback: ${CONFLUENCE_ONBOARDING}"
+  [[ -n "$DEPLOY_EXERCISE_REPO" ]] && echo "  7. Try the deploy exercise in '${DEPLOY_EXERCISE_REPO}' (see its README)"
   echo ""
+
+  # Team-specific docs — only the URLs this team defines
+  if [[ -n "$TEAM_PROCESSES_URL" || -n "$TEAM_DEV_DOCS_URL" || -n "$TEAM_BROWSER_TOOLS_URL" ]]; then
+    header "${TEAM_NAME} Team Docs"
+    [[ -n "$TEAM_PROCESSES_URL" ]]     && echo "  • Team processes: ${TEAM_PROCESSES_URL}"
+    [[ -n "$TEAM_DEV_DOCS_URL" ]]      && echo "  • Dev docs: ${TEAM_DEV_DOCS_URL}"
+    [[ -n "$TEAM_BROWSER_TOOLS_URL" ]] && echo "  • Browser tools: ${TEAM_BROWSER_TOOLS_URL}"
+    echo ""
+  fi
 }
 
 # ── Helper functions ────────────────────────────────────────────────
