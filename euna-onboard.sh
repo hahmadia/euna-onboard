@@ -39,7 +39,7 @@ ${BOLD}OPTIONS${NC}
 
 ${BOLD}PHASES${NC}
   1  Access Audit      Check platform access, open IT tickets
-  2  Environment       Homebrew, asdf, GPG, git, shell config
+  2  Environment       Homebrew, asdf, GPG, git
   3  Repositories      Clone and set up team-specific repos
   4  Bookmarks & AI    Chrome bookmarks, Warp rules, CLAUDE.md
   5  Verification      Smoke test everything, print report card

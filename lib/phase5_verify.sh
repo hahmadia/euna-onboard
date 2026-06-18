@@ -50,15 +50,6 @@ run_phase5() {
   done
   echo ""
 
-  # ── Shell Profile ─────────────────────────────────────────────────
-  echo "${BOLD}Shell Profile${NC}"
-  if grep -q "euna-onboard" "${HOME}/.zshrc" 2>/dev/null; then
-    success ".zshrc contains euna-onboard block"
-  else
-    fail ".zshrc missing euna-onboard configuration"
-  fi
-  echo ""
-
   # ── Platform Access ───────────────────────────────────────────────
   # Reports each platform from saved state (Phase 1 owns confirmation).
   echo "${BOLD}Platform Access${NC}"

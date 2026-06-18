@@ -12,7 +12,7 @@ This script is built to run on a brand-new Mac with nothing installed. The only 
 xcode-select --install
 ```
 
-Complete the popup it triggers and wait for the install to finish. Everything else — Homebrew, asdf, language runtimes, GPG, shell config — is installed for you in Phase 2.
+Complete the popup it triggers and wait for the install to finish. Everything else — Homebrew, asdf, language runtimes, GPG — is installed for you in Phase 2.
 
 ## Quick Start
 
@@ -49,7 +49,6 @@ The script runs 5 phases in order. Each phase is idempotent — safe to re-run i
 - Sets up asdf with ruby, nodejs, erlang, elixir plugins
 - Generates GPG key and configures git commit signing
 - Installs CityBase git commit template
-- Adds k8s aliases and tool config to `.zshrc`
 
 ### Phase 3: Clone Repositories
 - Clones all team-specific repos into `~/code/`

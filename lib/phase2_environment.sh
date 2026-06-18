@@ -1,5 +1,5 @@
 #!/bin/bash
-# phase2_environment.sh — Install tools, configure git, shell, GPG
+# phase2_environment.sh — Install tools, configure git, GPG
 
 run_phase2() {
   header "Phase 2: Environment Setup"
@@ -10,7 +10,6 @@ run_phase2() {
   setup_gpg
   setup_git
   setup_ssh
-  setup_shell_profile
 
   echo ""
   success "Phase 2 complete — environment is configured"
@@ -321,23 +320,4 @@ EOF
   fi
 
   mark_step_done "ssh_setup"
-}
-
-# ── Shell Profile ───────────────────────────────────────────────────
-setup_shell_profile() {
-  step "Configuring shell profile (.zshrc)..."
-  if is_step_done "shell_profile"; then
-    dim "Shell profile already configured"
-    return
-  fi
-
-  local zshrc="${HOME}/.zshrc"
-  [[ -f "$zshrc" ]] || touch "$zshrc"
-
-  local additions=$(cat "${TEMPLATE_DIR}/zshrc_additions.sh")
-  if dry_run_guard "Append to .zshrc"; then
-    append_block "$zshrc" "euna-onboard" "$additions"
-  fi
-
-  mark_step_done "shell_profile"
 }
